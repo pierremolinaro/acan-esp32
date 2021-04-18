@@ -39,26 +39,22 @@ void setup () {
 Now, an example of the `loop` function. As we have selected loop back mode, every sent frame is received.
 
 ```cpp
-static unsigned gSendDate = 0 ;
-static unsigned gSentCount = 0 ;
-static unsigned gReceivedCount = 0 ;
+static uint32_t gBlinkLedDate = 0 ;
+static uint32_t gReceivedFrameCount = 0 ;
+static uint32_t gSentFrameCount = 0 ;
 
 void loop () {
-  CANMessage message ;
-  if (gSendDate < millis ()) {
-    message.id = 0x542 ;
-    const bool ok = ACAN_ESP32::can.tryToSend (message) ;
+  CANMessage frame ;
+  if (gBlinkLedDate < millis ()) {
+    gBlinkLedDate += 500 ;
+    digitalWrite (LED_BUILTIN, !digitalRead (LED_BUILTIN)) ;
+    const bool ok = ACAN_ESP32::can.tryToSend (frame) ;
     if (ok) {
-      gSendDate += 2000 ;
-      gSentCount += 1 ;
-      Serial.print ("Sent: ") ;
-      Serial.println (gSentCount) ;
+      gSentFrameCount += 1 ;
     }
   }
-  if (ACAN_ESP32::can.receive (message)) {
-    gReceivedCount += 1 ;
-    Serial.print ("Received: ") ;
-    Serial.println (gReceivedCount) ;
+  while (ACAN_ESP32::can.receive (frame)) {
+    gReceivedFrameCount += 1 ;
   }
 }
 ```
@@ -66,38 +62,7 @@ void loop () {
 
 The `ACAN_ESP32::can.tryToSend` tries to send the message. It returns `true` if the message has been sucessfully added to the driver transmit buffer.
 
-The `gSendDate` variable handles sending a CAN message every 2000 ms.
+The `gBlinkLedDate ` variable handles sending a CAN message every 500 ms.
 
 `ACAN_ESP32::can.receive` returns `true` if a message has been received, and assigned to the `message`argument.
 
-### Use of Optional Reception Filtering
-
-The hardware defines two kinds of filters: *primary* and *secondary* filters. Depending the driver configuration, you can have up to 14 *primary* filters and 18 *secondary* filters.
-
-This an setup example:
-
-```cpp
-  ACAN_ESP32_Settings settings (125 * 1000) ;
-  ...
-   const ACANPrimaryFilter primaryFilters [] = {
-    ACANPrimaryFilter (kData, kExtended, 0x123456, handle_myMessage_0)
-  } ;
-  const ACANSecondaryFilter secondaryFilters [] = {
-    ACANSecondaryFilter (kData, kStandard, 0x234, handle_myMessage_1),
-    ACANSecondaryFilter (kRemote, kStandard, 0x542, handle_myMessage_2)
-  } ;
-  const uint32_t errorCode = ACAN_ESP32::can.begin (settings,
-                                               primaryFilters, 
-                                               1, // Primary filter array size
-                                               secondaryFilters,
-                                               2) ; // Secondary filter array size
-```
-For example, the first filter catches extended data frames, with an identifier equal to `0x123456`. When a such frame is received, the `handle_myMessage_0` function is called. In order to achieve this by-filter dispatching, you should call `ACAN_ESP32::can.dispatchReceivedMessage` instead of `ACAN_ESP32::can.receive` in the `loop`function:
-
-
-```cpp
-void loop () {
-  ACAN_ESP32::can.dispatchReceivedMessage () ; // Do not use ACAN_ESP32::can.receive any more
-  ...
-}
-```
