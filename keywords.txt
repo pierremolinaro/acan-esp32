@@ -1,0 +1,32 @@
+#######################################
+# Syntax Coloring Map
+#######################################
+
+#######################################
+# Datatypes (KEYWORD1)
+#######################################
+ACAN_ESP32_Settings	KEYWORD1
+ACAN_ESP32_Filter	KEYWORD1
+ACAN_ESP32	KEYWORD1
+CANMessage	KEYWORD1
+
+#######################################
+# Methods and Functions (KEYWORD2)
+#######################################
+begin KEYWORD2
+receive KEYWORD2
+tryToSend KEYWORD2
+periph_module_enable	KEYWORD2
+REGALL KEYWORD2
+
+#######################################
+# Macro definition (KEYWORD3)
+#######################################
+
+PERIPH_CAN_MODULE KEYWORD3
+CAN_BTR0 KEYWORD3
+CAN_BTR1 KEYWORD3
+
+#######################################
+# Constants (LITERAL1)
+#######################################
