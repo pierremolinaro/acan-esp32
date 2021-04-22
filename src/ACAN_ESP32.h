@@ -74,12 +74,13 @@ class ACAN_ESP32 {
   //    Receive buffer
   //································································································
 
+  private: ACAN_ESP32_Filter::Format mAcceptedFrameFormat ;
+
   private: ACANBuffer16 mDriverReceiveBuffer ;
 
   public: inline uint16_t driverReceiveBufferSize (void) const { return mDriverReceiveBuffer.size () ;  }
   public: inline uint16_t driverReceiveBufferCount (void) const { return mDriverReceiveBuffer.count() ;  }
   public: inline uint16_t driverReceiveBufferPeakCount (void) const { return mDriverReceiveBuffer.peakCount () ; }
-
 
   //································································································
   //    Transmitting messages

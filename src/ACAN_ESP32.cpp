@@ -35,6 +35,7 @@ static portMUX_TYPE mux = portMUX_INITIALIZER_UNLOCKED ;
 //--------------------------------------------------------------------------------------------------
 
 ACAN_ESP32::ACAN_ESP32 (void) :
+mAcceptedFrameFormat (ACAN_ESP32_Filter::standardAndExtended),
 mDriverReceiveBuffer (),
 mDriverTransmitBuffer (),
 mDriverIsSending (false) {
@@ -46,8 +47,6 @@ mDriverIsSending (false) {
 
 void ACAN_ESP32::setGPIOPins (const gpio_num_t inTXPin,
                               const gpio_num_t inRXPin) {
-//  gpio_num_t TXPin = GPIO_NUM_5;      //TX Pin - Default set to IO5. /*see schematics*/
-//  gpio_num_t RXPin = GPIO_NUM_4;      //RX Pin - Default set to IO4. /*see schematics*/
 //--- Set TX pin
   pinMode (inTXPin, OUTPUT) ;
   pinMatrixOutAttach (inTXPin, CAN_TX_IDX, false, false) ;
@@ -121,11 +120,11 @@ inline void ACAN_ESP32::setBitTimingSettings (const ACAN_ESP32_Settings & inSett
 //--------------------------------------------------------------------------------------------------
 
 void ACAN_ESP32::setAcceptanceFilter (const ACAN_ESP32_Filter inFilter) {
-
-  /* Write the Code and Mask Registers with Acceptance Filter Settings*/
-  if(inFilter.mAMFSingle){
+//--- Write the Code and Mask Registers with Acceptance Filter Settings
+  if (inFilter.mAMFSingle){
     CAN_MODE |= CAN_MODE_ACCFILTER ;
   }
+  mAcceptedFrameFormat = inFilter.mFormat ;
 
   CAN_ACC_CODE_FILTER(0) = inFilter.mACR0 ;
   CAN_ACC_CODE_FILTER(1) = inFilter.mACR1 ;
@@ -144,7 +143,7 @@ void ACAN_ESP32::setAcceptanceFilter (const ACAN_ESP32_Filter inFilter) {
 //--------------------------------------------------------------------------------------------------
 
 uint32_t ACAN_ESP32::begin (const ACAN_ESP32_Settings & inSettings) {
-  return internalBeginConfiguration (inSettings, acceptAllFilter ()) ;
+  return internalBeginConfiguration (inSettings, ACAN_ESP32_Filter::acceptAll ()) ;
 }
 
 //--------------------------------------------------------------------------------------------------
@@ -256,7 +255,21 @@ void ACAN_ESP32::handleTXInterrupt (void) {
 void ACAN_ESP32::handleRXInterrupt (void) {
   CANMessage frame;
   getReceivedMessage (frame) ;
-  mDriverReceiveBuffer.append (frame) ;
+  switch (mAcceptedFrameFormat) {
+  case ACAN_ESP32_Filter::standard :
+    if (!frame.ext) {
+      mDriverReceiveBuffer.append (frame) ;
+    }
+    break ;
+  case ACAN_ESP32_Filter::extended :
+    if (frame.ext) {
+      mDriverReceiveBuffer.append (frame) ;
+    }
+    break ;
+  case ACAN_ESP32_Filter::standardAndExtended :
+    mDriverReceiveBuffer.append (frame) ;
+    break ;
+  }
 }
 
 //--------------------------------------------------------------------------------------------------
@@ -273,7 +286,6 @@ bool ACAN_ESP32::receive (CANMessage & outMessage) {
 //--------------------------------------------------------------------------------------------------
 
 void ACAN_ESP32::getReceivedMessage (CANMessage & outFrame) {
-
   const uint32_t frameInfo = CAN_FRAME_INFO ;
 
   outFrame.len = frameInfo & 0xF;
