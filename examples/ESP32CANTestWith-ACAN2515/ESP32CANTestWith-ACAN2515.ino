@@ -66,7 +66,7 @@ void setup() {
 //--- Configure ESP32 CAN
   Serial.println ("Configure ESP32 CAN") ;
   ACAN_ESP32_Settings settings (DESIRED_BIT_RATE);           // CAN bit rate 
-  const uint16_t errorCode = ACAN_ESP32::can.begin (settings) ;
+  const uint32_t errorCode = ACAN_ESP32::can.begin (settings) ;
   if (errorCode == 0) {
     Serial.println ("Configuration ESP32 OK!");
   }else{

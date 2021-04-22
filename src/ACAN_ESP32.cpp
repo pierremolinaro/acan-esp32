@@ -60,7 +60,7 @@ void ACAN_ESP32::setGPIOPins (const gpio_num_t inTXPin,
 //--------------------------------------------------------------------------------------------------
 
 void ACAN_ESP32::setRequestedCANMode (const ACAN_ESP32_Settings & inSettings,
-                                      const ACAN_ESP32_Filter inFilter) {
+                                      const ACAN_ESP32_Filter & inFilter) {
   /* ESP32 CAN Operation Mode Configuration
 
      Supported Mode                 MODE Registers
@@ -119,7 +119,7 @@ inline void ACAN_ESP32::setBitTimingSettings (const ACAN_ESP32_Settings & inSett
 
 //--------------------------------------------------------------------------------------------------
 
-void ACAN_ESP32::setAcceptanceFilter (const ACAN_ESP32_Filter inFilter) {
+void ACAN_ESP32::setAcceptanceFilter (const ACAN_ESP32_Filter & inFilter) {
 //--- Write the Code and Mask Registers with Acceptance Filter Settings
   if (inFilter.mAMFSingle){
     CAN_MODE |= CAN_MODE_ACCFILTER ;
@@ -142,22 +142,15 @@ void ACAN_ESP32::setAcceptanceFilter (const ACAN_ESP32_Filter inFilter) {
 //   BEGIN
 //--------------------------------------------------------------------------------------------------
 
-uint32_t ACAN_ESP32::begin (const ACAN_ESP32_Settings & inSettings) {
-  return internalBeginConfiguration (inSettings, ACAN_ESP32_Filter::acceptAll ()) ;
-}
+// uint32_t ACAN_ESP32::begin (const ACAN_ESP32_Settings & inSettings) {
+//   return internalBeginConfiguration (inSettings, ACAN_ESP32_Filter::acceptAll ()) ;
+// }
 
 //--------------------------------------------------------------------------------------------------
 
 uint32_t ACAN_ESP32::begin (const ACAN_ESP32_Settings & inSettings,
-                            const ACAN_ESP32_Filter inFiltersettings) {
-  return internalBeginConfiguration (inSettings, inFiltersettings) ;
-}
-
-//--------------------------------------------------------------------------------------------------
-
-uint16_t ACAN_ESP32::internalBeginConfiguration (const ACAN_ESP32_Settings &inSettings,
-                                                 const ACAN_ESP32_Filter inFilterSettings) {
-  uint16_t errorCode = 0 ; // Ok be default
+                            const ACAN_ESP32_Filter & inFilterSettings) {
+  uint32_t errorCode = 0 ; // Ok be default
 //--- Enable CAN module
   //----Access the CAN Peripheral registers and initialize the CLOCK
   //https://github.com/ThomasBarth/ESP32-CAN-Driver/blob/master/components/can/CAN.c

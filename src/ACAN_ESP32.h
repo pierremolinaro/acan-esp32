@@ -44,12 +44,8 @@ class ACAN_ESP32 {
   //    Initialisation: returns 0 if ok, otherwise see error codes below
   //································································································
 
-  // Default Filter Settings
-  public: uint32_t begin (const ACAN_ESP32_Settings & inSettings) ;
-
-  // With Acceptance Filter Settings
   public: uint32_t begin (const ACAN_ESP32_Settings & inSettings,
-                          const ACAN_ESP32_Filter inFilterSettings) ;
+                          const ACAN_ESP32_Filter & inFilterSettings = ACAN_ESP32_Filter::acceptAll ()) ;
 
 
   //································································································
@@ -58,11 +54,10 @@ class ACAN_ESP32 {
 
   private: void setGPIOPins (const gpio_num_t inTXPin, const gpio_num_t inRXPin);
   private: void setBitTimingSettings(const ACAN_ESP32_Settings &inSettings) ;
-  private: void setRequestedCANMode (const ACAN_ESP32_Settings &inSettings, const ACAN_ESP32_Filter inFilter) ;
-  private: void setAcceptanceFilter (const ACAN_ESP32_Filter inFilter) ;
+  private: void setRequestedCANMode (const ACAN_ESP32_Settings &inSettings,
+                                     const ACAN_ESP32_Filter & inFilter) ;
+  private: void setAcceptanceFilter (const ACAN_ESP32_Filter & inFilter) ;
 
-  private: uint16_t internalBeginConfiguration (const ACAN_ESP32_Settings & inSettings,
-                                                const ACAN_ESP32_Filter inFilterSettings) ;
   //································································································
   //    Receiving messages
   //································································································

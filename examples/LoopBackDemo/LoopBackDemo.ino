@@ -1,5 +1,5 @@
 /******************************************************************************/
-/* File name        : LoopBackCheck-Interrupt.ino                             */
+/* File name        : LoopBackDemo.ino                                        */
 /* Project          : ESP32-CAN-DRIVER                                        */
 /* Description      : ESP32 CAN Self Test with Interrupt Handler              */
 /* ---------------------------------------------------------------------------*/
@@ -45,7 +45,7 @@ void setup() {
   Serial.println ("Configure ESP32 CAN") ;
   ACAN_ESP32_Settings settings (DESIRED_BIT_RATE);           // CAN bit rate 
   settings.mRequestedCANMode = ACAN_ESP32_Settings::LoopBackMode ;  // Select loopback mode
-  const uint16_t errorCode = ACAN_ESP32::can.begin (settings) ;
+  const uint32_t errorCode = ACAN_ESP32::can.begin (settings) ;
   if (errorCode == 0) {
     Serial.print ("Bit Rate prescaler: ") ;
     Serial.println (settings.mBitRatePrescaler) ;

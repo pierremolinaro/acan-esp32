@@ -38,8 +38,8 @@ void setup () {
   Serial.println("Configure ESP32 CAN");
   ACAN_ESP32_Settings settings (DESIRED_BIT_RATE) ;
   settings.mRequestedCANMode = ACAN_ESP32_Settings::LoopBackMode ;
-  const ACAN_ESP32_Filter filter = ACAN_ESP32_Filter::singleExtendedFilter (ACAN_ESP32_Filter::data, 0x5678, 0) ;
-  const uint16_t errorCode = ACAN_ESP32::can.begin (settings, filter);
+  const ACAN_ESP32_Filter filter = ACAN_ESP32_Filter::singleExtendedFilter (ACAN_ESP32_Filter::data, 0x12345678, 0x20202) ;
+  const uint32_t errorCode = ACAN_ESP32::can.begin (settings, filter);
   if (errorCode == 0) {
     Serial.print("Bit Rate prescaler: ");
     Serial.println(settings.mBitRatePrescaler);
