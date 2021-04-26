@@ -22,10 +22,24 @@
 
 #pragma once
 
-//------------------------------- Include files ----------------------------------------------------
+//--------------------------------------------------------------------------------------------------
+//  Include files
+//--------------------------------------------------------------------------------------------------
 
 #include <stdint.h>
-#include <freertos/FreeRTOS.h>
+#ifdef ARDUINO
+  #include <freertos/FreeRTOS.h>
+#endif
+
+//--------------------------------------------------------------------------------------------------
+//  CAN CLOCK
+//--------------------------------------------------------------------------------------------------
+
+#ifdef ARDUINO
+  static const uint32_t CAN_CLOCK = APB_CLK_FREQ / 2 ; // APB_CLK_FREQ: 80 MHz APB CLOCK
+#else
+  static const uint32_t CAN_CLOCK = 40 * 1000 * 1000 ; // 40 MHz
+#endif
 
 //--------------------------------------------------------------------------------------------------
 //  ESP32 ACANSettings class
@@ -34,7 +48,7 @@
 class ACAN_ESP32_Settings {
 
   //································································································
-  //   ENUMERATED TYPES
+  //   ENUMERATED TYPE
   //································································································
 
   //--- CAN driver operating modes
@@ -48,40 +62,42 @@ class ACAN_ESP32_Settings {
   //   CONSTRUCTOR
   //································································································
 
-  public: ACAN_ESP32_Settings (const uint32_t inDesiredBitRate,
-                               const uint32_t inTolerancePPM = 1000);
+    public: ACAN_ESP32_Settings (const uint32_t inDesiredBitRate,
+                                 const uint32_t inTolerancePPM = 1000) ;
 
   //································································································
   //   CAN PINS
   //································································································
 
-  public: gpio_num_t mTxPin = GPIO_NUM_5 ;
-  public: gpio_num_t mRxPin = GPIO_NUM_4 ;
+  #ifdef ARDUINO
+    public: gpio_num_t mTxPin = GPIO_NUM_5 ;
+    public: gpio_num_t mRxPin = GPIO_NUM_4 ;
+  #endif
 
   //································································································
   //   CAN BIT TIMING
   //································································································
 
-  public: uint32_t mDesiredBitRate ;                 // In kb/s
-  public: uint8_t mBitRatePrescaler = 0 ;            // 2...128
-  public: uint8_t mTimeSegment1 = 0 ;                // 1...16
-  public: uint8_t mTimeSegment2 = 0 ;                // 1...8
-  public: uint8_t mSJW = 0 ;                         // 1...4
-  public: bool mTripleSampling = false ;             // true --> triple sampling, false --> single sampling
-  public: bool mBitRateClosedToDesiredRate = false ; // The above configuration is correct
+    public: uint32_t mDesiredBitRate ;                 // In kb/s
+    public: uint8_t mBitRatePrescaler = 0 ;            // 1...64
+    public: uint8_t mTimeSegment1 = 0 ;                // 1...16
+    public: uint8_t mTimeSegment2 = 0 ;                // 2...8
+    public: uint8_t mRJW = 0 ;                         // 1...4
+    public: bool mTripleSampling = false ;             // true --> triple sampling, false --> single sampling
+    public: bool mBitRateClosedToDesiredRate = false ; // The above configuration is correct
 
   //································································································
   //   Max values
   //································································································
 
-    public: static const uint8_t Sync_Seg            = 1 ;    // Fixed Sync Segment
-    public: static const uint8_t MAX_BRP             = 128 ;
-    public: static const uint8_t MIN_BRP             = 2 ;
-    public: static const uint8_t MAX_TQ              = 25 ;
-    public: static const uint8_t MIN_TQ              = 3 ;
-    public: static const uint8_t MAX_TIME_SEGMENT_1  = 16 ;
-    public: static const uint8_t MAX_TIME_SEGMENT_2  = 8 ;
-    public: static const uint8_t MAX_SJW             = 4 ;
+    public: static const uint8_t SYNC_SEGMENT       = 1 ; // Fixed Sync Segment
+    public: static const uint32_t MAX_BRP           = 64 ;
+    public: static const uint32_t MIN_BRP           = 1 ;
+    public: static const uint32_t MAX_TQ            = 25 ;
+    public: static const uint32_t MIN_TQ            = 5 ;
+    public: static const uint8_t MAX_TIME_SEGMENT_1 = 16 ;
+    public: static const uint8_t MAX_TIME_SEGMENT_2 = 8 ;
+    public: static const uint8_t MAX_SJW            = 4 ;
 
   //································································································
   //   Requested mode
@@ -135,15 +151,16 @@ class ACAN_ESP32_Settings {
   //    Constants returned by CANBitSettingConsistency
   //································································································
 
-  public: static const uint16_t kBitRatePrescalerIsLowerThan2                = 1 <<  0 ;
-  public: static const uint16_t kBitRatePrescalerIsGreaterThan128            = 1 <<  1 ;
-  public: static const uint16_t kTimeSegment1IsZero                          = 1 <<  2 ;
-  public: static const uint16_t kTimeSegment1IsGreaterThan16                 = 1 <<  3 ;
-  public: static const uint16_t kTimeSegment2IsZero                          = 1 <<  4 ;
-  public: static const uint16_t kTimeSegment2IsGreaterThan8                  = 1 <<  5 ;
-  public: static const uint16_t kTimeSegment1Is1AndTripleSampling            = 1 <<  6 ;
-  public: static const uint16_t kSJWIsZero                                   = 1 <<  7 ;
-  public: static const uint16_t kSJWIsGreaterThan4                           = 1 <<  8 ;
+    public: static const uint16_t kBitRatePrescalerIsZero           = 1 <<  0 ;
+    public: static const uint16_t kBitRatePrescalerIsGreaterThan64  = 1 <<  1 ;
+    public: static const uint16_t kTimeSegment1IsZero               = 1 <<  2 ;
+    public: static const uint16_t kTimeSegment1IsGreaterThan16      = 1 <<  3 ;
+    public: static const uint16_t kTimeSegment2IsLowerThan2         = 1 <<  4 ;
+    public: static const uint16_t kTimeSegment2IsGreaterThan8       = 1 <<  5 ;
+    public: static const uint16_t kTimeSegment2Is2AndTripleSampling = 1 <<  6 ;
+    public: static const uint16_t kRJWIsZero                        = 1 <<  7 ;
+    public: static const uint16_t kRJWIsGreaterThan4                = 1 <<  8 ;
+    public: static const uint16_t kRJWIsGreaterThanTimeSegment2     = 1 <<  9 ;
 
   //································································································
 

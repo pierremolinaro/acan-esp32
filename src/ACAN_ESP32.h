@@ -100,12 +100,12 @@ class ACAN_ESP32 {
   //    Error codes returned by begin
   //································································································
 
-  public: static const uint32_t kNotInRestModeInConfiguration             = 1 <<  9 ;
-  public: static const uint32_t kCANRegistersError                        = 1 << 10 ;
-  public: static const uint32_t kTooFarFromDesiredBitRate                 = 1 << 11 ;
-  public: static const uint32_t kInconsistentBitRateSettings              = 1 << 12 ;
-  public: static const uint32_t kCannotAllocateDriverReceiveBuffer        = 1 << 13 ;
-  public: static const uint32_t kCannotAllocateDriverTransmitBuffer       = 1 << 14 ;
+  public: static const uint32_t kNotInRestModeInConfiguration       = 1 << 16 ;
+  public: static const uint32_t kCANRegistersError                  = 1 << 17 ;
+  public: static const uint32_t kTooFarFromDesiredBitRate           = 1 << 18 ;
+  public: static const uint32_t kInconsistentBitRateSettings        = 1 << 19 ;
+  public: static const uint32_t kCannotAllocateDriverReceiveBuffer  = 1 << 20 ;
+  public: static const uint32_t kCannotAllocateDriverTransmitBuffer = 1 << 21 ;
 
   //································································································
   //    Interrupt Handler
@@ -113,8 +113,8 @@ class ACAN_ESP32 {
 
   public: static void IRAM_ATTR isr (void * inUserArgument) ;
 
-  public: void handleTXInterrupt(void) ;
-  public: void handleRXInterrupt(void) ;
+  public: void handleTXInterrupt (void) ;
+  public: void handleRXInterrupt (void) ;
 
   //································································································
   //    No Copy

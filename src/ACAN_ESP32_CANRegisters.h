@@ -94,6 +94,9 @@ static const uint32_t CAN_INTERRUPT_BUS_ERR      = 0x80;
 
 #define CAN_IER         (*((volatile uint32_t *)(ESP32CAN_BASE + 0x010)))
 
+static const uint32_t CAN_INTERRUPT_RX_ENABLE = 0x01 ;
+static const uint32_t CAN_INTERRUPT_TX_ENABLE = 0x02 ;
+
 //--------------------------------------------------------------------------------------------------
 // CAN_BTR0
 //--------------------------------------------------------------------------------------------------

@@ -13,7 +13,7 @@
 //------------------------------- Board Check ----------------------------------
 
 #ifndef ARDUINO_ARCH_ESP32
-  #error "Select an ESP32 board" 
+  #error "Select an ESP32 board"
 #endif
 
 //------------------------------- Include files --------------------------------
@@ -36,15 +36,13 @@ void setup() {
   digitalWrite (LED_BUILTIN, HIGH) ;
 //--- Start serial
   Serial.begin (115200) ;
-//--- Wait for serial (blink led at 10 Hz during waiting)
-  while (!Serial) {
-    delay (50) ;
-    digitalWrite (LED_BUILTIN, !digitalRead (LED_BUILTIN)) ;
-  }
+  delay (100) ;
 //--- Configure ESP32 CAN
   Serial.println ("Configure ESP32 CAN") ;
   ACAN_ESP32_Settings settings (DESIRED_BIT_RATE) ;
   settings.mRequestedCANMode = ACAN_ESP32_Settings::LoopBackMode ;  // Select loopback mode
+//  settings.mRxPin = GPIO_NUM_4 ; // Optional, default Tx pin is GPIO_NUM_4
+//  settings.mTxPin = GPIO_NUM_5 ; // Optional, default Rx pin is GPIO_NUM_5
   const uint32_t errorCode = ACAN_ESP32::can.begin (settings) ;
   if (errorCode == 0) {
     Serial.print ("Bit Rate prescaler: ") ;
@@ -53,8 +51,8 @@ void setup() {
     Serial.println (settings.mTimeSegment1) ;
     Serial.print ("Time Segment 2:     ") ;
     Serial.println (settings.mTimeSegment2) ;
-    Serial.print ("SJW:                ") ;
-    Serial.println (settings.mSJW) ;
+    Serial.print ("RJW:                ") ;
+    Serial.println (settings.mRJW) ;
     Serial.print ("Triple Sampling:    ") ;
     Serial.println (settings.mTripleSampling ? "yes" : "no") ;
     Serial.print ("Actual bit rate:    ") ;
@@ -78,7 +76,7 @@ static uint32_t gBlinkLedDate = 0;
 static uint32_t gReceivedFrameCount = 0 ;
 static uint32_t gSentFrameCount = 0 ;
 
-static const uint32_t MESSAGE_COUNT = 10 * 1000 * 1000;
+static const uint32_t MESSAGE_COUNT = 10 * 1000 * 1000 ;
 
 //——————————————————————————————————————————————————————————————————————————————
 //   LOOP
@@ -86,9 +84,11 @@ static const uint32_t MESSAGE_COUNT = 10 * 1000 * 1000;
 
 void loop() {
   if (gBlinkLedDate < millis ()) {
-    gBlinkLedDate += 500 ;
+    gBlinkLedDate += 1000 ;
     digitalWrite (LED_BUILTIN, !digitalRead (LED_BUILTIN)) ;
-    Serial.print ("Sent: ") ;
+    Serial.print ("At ") ;
+    Serial.print (gBlinkLedDate / 1000) ;
+    Serial.print (" s, sent: ") ;
     Serial.print (gSentFrameCount) ;
     Serial.print ("\t") ;
     Serial.print ("Receive: ") ;

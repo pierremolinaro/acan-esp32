@@ -13,7 +13,7 @@
 //------------------------------- Board Check ----------------------------------
 
 #ifndef ARDUINO_ARCH_ESP32
-  #error "Select an ESP32 board" 
+  #error "Select an ESP32 board"
 #endif
 
 //------------------------------- Include files --------------------------------
@@ -58,14 +58,12 @@ void setup() {
   digitalWrite (LED_BUILTIN, HIGH) ;
 //--- Start serial
   Serial.begin (115200) ;
-//--- Wait for serial (blink led at 10 Hz during waiting)
-  while (!Serial) {
-    delay (50) ;
-    digitalWrite (LED_BUILTIN, !digitalRead (LED_BUILTIN)) ;
-  }
+  delay (100) ;
 //--- Configure ESP32 CAN
   Serial.println ("Configure ESP32 CAN") ;
-  ACAN_ESP32_Settings settings (DESIRED_BIT_RATE);           // CAN bit rate 
+  ACAN_ESP32_Settings settings (DESIRED_BIT_RATE);           // CAN bit rate
+//  settings.mRxPin = GPIO_NUM_4 ; // Optional, default Tx pin is GPIO_NUM_4
+//  settings.mTxPin = GPIO_NUM_5 ; // Optional, default Rx pin is GPIO_NUM_5
   const uint32_t errorCode = ACAN_ESP32::can.begin (settings) ;
   if (errorCode == 0) {
     Serial.println ("Configuration ESP32 OK!");
@@ -118,9 +116,9 @@ void loop() {
     Serial.print("ReceiveESP32: ");
     Serial.println(gReceivedFrameCountESP32);
   }
-  
+
   CANMessage frame ;
-  
+
   if (gSentFrameCountESP32 < MESSAGE_COUNT) {
     //frame.ext=true;
     frame.id= millis () & 0x7FE;
@@ -143,11 +141,11 @@ void loop() {
       gSentFrameCount2515 += 1 ;
     }
   }
-  
+
   while (can2515.receive (frame)) {
     gReceivedFrameCount2515 += 1 ;
   }
   while (ACAN_ESP32::can.receive (frame)) {
     gReceivedFrameCountESP32 += 1 ;
-  }    
+  }
 }

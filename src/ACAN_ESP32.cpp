@@ -61,13 +61,13 @@ void ACAN_ESP32::setGPIOPins (const gpio_num_t inTXPin,
 
 void ACAN_ESP32::setRequestedCANMode (const ACAN_ESP32_Settings & inSettings,
                                       const ACAN_ESP32_Filter & inFilter) {
-  /* ESP32 CAN Operation Mode Configuration
-
-     Supported Mode                 MODE Registers
-     - Normal Mode                  - Reset             -> bit(0)
-     - No ACK                       - ListenOnly        -> bit(1)
-     - Acceptance Filter            - SelfTest          -> bit(2)
-                                    - Acceptance Filter -> bit(3) */
+// ESP32 CAN Operation Mode Configuration
+//
+//    Supported Mode                 MODE Registers
+//     - Normal Mode                  - Reset             -> bit(0)
+//     - No ACK                       - ListenOnly        -> bit(1)
+//     - Acceptance Filter            - SelfTest          -> bit(2)
+//                                    - Acceptance Filter -> bit(3)
 
   uint8_t requestedMode = 0 ;
   switch (inSettings.mRequestedCANMode) {
@@ -81,7 +81,7 @@ void ACAN_ESP32::setRequestedCANMode (const ACAN_ESP32_Settings & inSettings,
       break ;
   }
 
-  if(inFilter.mAMFSingle) {
+  if (inFilter.mAMFSingle) {
     requestedMode |= CAN_MODE_ACCFILTER ;
   }
 
@@ -97,55 +97,49 @@ void ACAN_ESP32::setRequestedCANMode (const ACAN_ESP32_Settings & inSettings,
 //--------------------------------------------------------------------------------------------------
 
 inline void ACAN_ESP32::setBitTimingSettings (const ACAN_ESP32_Settings & inSettings) {
-  /* BUS TIMING Configuration of ESP32 CAN
-     ACAN_ESP32_Settings calculates the best values for the desired bit Rate.
+// BUS TIMING Configuration of ESP32 CAN
+//     ACAN_ESP32_Settings calculates the best values for the desired bit Rate.
+//
+//  BTR0 : bit (0 - 5) -> Baud Rate Prescaller (BRP)
+//         bit (6 - 7) -> Resynchronization Jump Width (RJW)
+//
+//  BTR1 : bit (0 - 3) -> TimeSegment 1 (Tseg1)
+//         bit (4 - 6) -> TimeSegment 2 (Tseg2)
+//         bit (7)     -> TripleSampling? (SAM)
 
-  BTR0 : bit (0 - 5) -> Baud Rate Prescaller (BRP)
-         bit (6 - 7) -> Snychronous Jump Width (SJW)
+  CAN_BTR0 = ((inSettings.mRJW - 1) << 6) |            // SJW
+             ((inSettings.mBitRatePrescaler - 1) << 0) // BRP
+  ;
 
-  BTR1 : bit (0 - 3) -> TimeSegment 1 (Tseg1)
-         bit (4 - 6) -> TimeSegment 2 (Tseg2)
-         bit (7)     -> TripleSampling? (SAM)   */
-
-  CAN_BTR0 = ((inSettings.mSJW - 1) << 6) |                    /* SJW */
-             ((((inSettings.mBitRatePrescaler) / 2) - 1) << 0) /* BRP */
-      ;
-
-  CAN_BTR1 = ((inSettings.mTripleSampling) << 7)   | /* Sampling */
-             ((inSettings.mTimeSegment2 - 1) << 4) | /* Tseg2    */
-             ((inSettings.mTimeSegment1 - 1) << 0)   /* Tseg1    */
-      ;
+  CAN_BTR1 = ((inSettings.mTripleSampling) << 7)   | // Sampling
+             ((inSettings.mTimeSegment2 - 1) << 4) | // Tseg2
+             ((inSettings.mTimeSegment1 - 1) << 0)   // Tseg1
+  ;
 }
 
 //--------------------------------------------------------------------------------------------------
 
 void ACAN_ESP32::setAcceptanceFilter (const ACAN_ESP32_Filter & inFilter) {
 //--- Write the Code and Mask Registers with Acceptance Filter Settings
-  if (inFilter.mAMFSingle){
+  if (inFilter.mAMFSingle) {
     CAN_MODE |= CAN_MODE_ACCFILTER ;
   }
   mAcceptedFrameFormat = inFilter.mFormat ;
 
-  CAN_ACC_CODE_FILTER(0) = inFilter.mACR0 ;
-  CAN_ACC_CODE_FILTER(1) = inFilter.mACR1 ;
-  CAN_ACC_CODE_FILTER(2) = inFilter.mACR2 ;
-  CAN_ACC_CODE_FILTER(3) = inFilter.mACR3 ;
+  CAN_ACC_CODE_FILTER (0) = inFilter.mACR0 ;
+  CAN_ACC_CODE_FILTER (1) = inFilter.mACR1 ;
+  CAN_ACC_CODE_FILTER (2) = inFilter.mACR2 ;
+  CAN_ACC_CODE_FILTER (3) = inFilter.mACR3 ;
 
-  CAN_ACC_MASK_FILTER(0) = inFilter.mAMR0 ;
-  CAN_ACC_MASK_FILTER(1) = inFilter.mAMR1 ;
-  CAN_ACC_MASK_FILTER(2) = inFilter.mAMR2 ;
-  CAN_ACC_MASK_FILTER(3) = inFilter.mAMR3 ;
+  CAN_ACC_MASK_FILTER (0) = inFilter.mAMR0 ;
+  CAN_ACC_MASK_FILTER (1) = inFilter.mAMR1 ;
+  CAN_ACC_MASK_FILTER (2) = inFilter.mAMR2 ;
+  CAN_ACC_MASK_FILTER (3) = inFilter.mAMR3 ;
 
 }
 
 //--------------------------------------------------------------------------------------------------
 //   BEGIN
-//--------------------------------------------------------------------------------------------------
-
-// uint32_t ACAN_ESP32::begin (const ACAN_ESP32_Settings & inSettings) {
-//   return internalBeginConfiguration (inSettings, ACAN_ESP32_Filter::acceptAll ()) ;
-// }
-
 //--------------------------------------------------------------------------------------------------
 
 uint32_t ACAN_ESP32::begin (const ACAN_ESP32_Settings & inSettings,
@@ -189,9 +183,9 @@ uint32_t ACAN_ESP32::begin (const ACAN_ESP32_Settings & inSettings,
   if (!mDriverTransmitBuffer.initWithSize (inSettings.mDriverTransmitBufferSize)) {
     errorCode |= kCannotAllocateDriverTransmitBuffer ;
   }
-//--------------------------------- Set Bustiming Registers
+//--------------------------------- Set Bus timing Registers
   if (errorCode == 0) {
-    setBitTimingSettings(inSettings) ;
+    setBitTimingSettings (inSettings) ;
   }
 //--------------------------------- Set the Acceptance Filter
   setAcceptanceFilter (inFilterSettings) ;
@@ -203,8 +197,8 @@ uint32_t ACAN_ESP32::begin (const ACAN_ESP32_Settings & inSettings,
   const uint8_t unusedVariable __attribute__((unused)) = CAN_INTERRUPT ;
 //--------------------------------- Set Interrupt Service Routine
   esp_intr_alloc (ETS_CAN_INTR_SOURCE, 0, isr, this, nullptr) ;
-//--------------------------------- Enable All the Interupts
-  CAN_IER = 0xFF ;
+//--------------------------------- Enable Interupts
+  CAN_IER = CAN_INTERRUPT_TX_ENABLE | CAN_INTERRUPT_RX_ENABLE ;
 //--------------------------------- Set to Requested Mode
   setRequestedCANMode (inSettings, inFilterSettings) ;
 //---

@@ -15,7 +15,7 @@
 //------------------------------- Board Check ----------------------------------
 
 #ifndef ARDUINO_ARCH_ESP32
-  #error "Select an ESP32 board" 
+  #error "Select an ESP32 board"
 #endif
 
 //------------------------------- Include files --------------------------------
@@ -33,16 +33,15 @@ void setup() {
   digitalWrite (LED_BUILTIN, HIGH) ;
 //--- Start serial
   Serial.begin (115200) ;
-
+  delay (100) ;
 //--- Enable the ESP32 CAN Peripheral to access the registers
   periph_module_enable (PERIPH_CAN_MODULE) ;
-  
 //--- Wait for serial (blink led at 10 Hz during waiting)
   while (!Serial) {
     delay (50) ;
     digitalWrite (LED_BUILTIN, !digitalRead (LED_BUILTIN)) ;
   }
-  
+
   Serial.println ("ESP32 CAN REGISTERS") ;
   for (uint32_t idx=0; idx<=31 ; idx++) {
     uint32_t value = REGALL(idx);
@@ -64,7 +63,7 @@ void loop() {
     gBlinkLedDate += 2000 ;
     digitalWrite (LED_BUILTIN, !digitalRead (LED_BUILTIN)) ;
   }
- 
+
 //--- Write Access to bus timming registers
   for (uint16_t i = 0; i <= 255; i++) {
     CAN_BTR0 = byte (i) ;

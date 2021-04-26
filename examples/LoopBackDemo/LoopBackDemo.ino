@@ -13,12 +13,13 @@
 //------------------------------- Board Check ----------------------------------
 
 #ifndef ARDUINO_ARCH_ESP32
-  #error "Select an ESP32 board" 
+  #error "Select an ESP32 board"
 #endif
 
 //------------------------------- Include files --------------------------------
 
 #include <ACAN_ESP32.h>
+#include <core_version.h> // For ARDUINO_ESP32_RELEASE
 
 //——————————————————————————————————————————————————————————————————————————————
 //  ESP32 Desired Bit Rate
@@ -36,15 +37,29 @@ void setup() {
   digitalWrite (LED_BUILTIN, HIGH) ;
 //--- Start serial
   Serial.begin (115200) ;
-//--- Wait for serial (blink led at 10 Hz during waiting)
-  while (!Serial) {
-    delay (50) ;
-    digitalWrite (LED_BUILTIN, !digitalRead (LED_BUILTIN)) ;
-  }
+  delay (100) ;
+//--- Display ESP32 Chip Info
+  esp_chip_info_t chip_info ;
+  esp_chip_info (&chip_info) ;
+  Serial.print ("ESP32 Arduino Release: ") ;
+  Serial.println (ARDUINO_ESP32_RELEASE) ;
+  Serial.print ("ESP32 Chip Revision: ") ;
+  Serial.println (chip_info.revision) ;
+  Serial.print ("ESP32 SDK: ") ;
+  Serial.println (ESP.getSdkVersion ()) ;
+  Serial.print ("ESP32 Flash: ") ;
+  Serial.print (spi_flash_get_chip_size () / (1024 * 1024)) ;
+  Serial.print (" MB ") ;
+  Serial.println (((chip_info.features & CHIP_FEATURE_EMB_FLASH) != 0) ? "(embeded)" : "(external)") ;
+  Serial.print ("APB CLOCK: ") ;
+  Serial.print (APB_CLK_FREQ) ;
+  Serial.println (" Hz") ;
 //--- Configure ESP32 CAN
   Serial.println ("Configure ESP32 CAN") ;
-  ACAN_ESP32_Settings settings (DESIRED_BIT_RATE);           // CAN bit rate 
-  settings.mRequestedCANMode = ACAN_ESP32_Settings::LoopBackMode ;  // Select loopback mode
+  ACAN_ESP32_Settings settings (DESIRED_BIT_RATE) ;
+  settings.mRequestedCANMode = ACAN_ESP32_Settings::LoopBackMode ;
+//  settings.mRxPin = GPIO_NUM_4 ; // Optional, default Tx pin is GPIO_NUM_4
+//  settings.mTxPin = GPIO_NUM_5 ; // Optional, default Rx pin is GPIO_NUM_5
   const uint32_t errorCode = ACAN_ESP32::can.begin (settings) ;
   if (errorCode == 0) {
     Serial.print ("Bit Rate prescaler: ") ;
@@ -53,8 +68,8 @@ void setup() {
     Serial.println (settings.mTimeSegment1) ;
     Serial.print ("Time Segment 2:     ") ;
     Serial.println (settings.mTimeSegment2) ;
-    Serial.print ("SJW:                ") ;
-    Serial.println (settings.mSJW) ;
+    Serial.print ("RJW:                ") ;
+    Serial.println (settings.mRJW) ;
     Serial.print ("Triple Sampling:    ") ;
     Serial.println (settings.mTripleSampling ? "yes" : "no") ;
     Serial.print ("Actual bit rate:    ") ;

@@ -28,16 +28,13 @@ void setup () {
   digitalWrite(LED_BUILTIN, HIGH);
 //--- Start serial
   Serial.begin (115200) ;
-  delay (1000) ;
-  //--- Wait for serial (blink led at 10 Hz during waiting)
-  while (!Serial) {
-    delay (50) ;
-    digitalWrite(LED_BUILTIN, !digitalRead(LED_BUILTIN));
-  }
+  delay (100) ;
 //--- Configure ESP32 CAN
   Serial.println("Configure ESP32 CAN");
   ACAN_ESP32_Settings settings (DESIRED_BIT_RATE) ;
   settings.mRequestedCANMode = ACAN_ESP32_Settings::LoopBackMode ;
+//  settings.mRxPin = GPIO_NUM_4 ; // Optional, default Tx pin is GPIO_NUM_4
+//  settings.mTxPin = GPIO_NUM_5 ; // Optional, default Rx pin is GPIO_NUM_5
   const ACAN_ESP32_Filter filter = ACAN_ESP32_Filter::dualStandardFilter (
     ACAN_ESP32_Filter::data, 0x123, 0x110,
     ACAN_ESP32_Filter::remote, 0x456, 0x022
@@ -50,8 +47,8 @@ void setup () {
     Serial.println(settings.mTimeSegment1);
     Serial.print("Time Segment 2:     ");
     Serial.println(settings.mTimeSegment2);
-    Serial.print("SJW:                ");
-    Serial.println(settings.mSJW);
+    Serial.print ("RJW:                ") ;
+    Serial.println (settings.mRJW) ;
     Serial.print("Triple Sampling:    ");
     Serial.println(settings.mTripleSampling ? "yes" : "no");
     Serial.print("Actual bit rate:    ");
