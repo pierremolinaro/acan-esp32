@@ -1,5 +1,5 @@
 /******************************************************************************/
-/* File name        : LoopBackCheck-IntensiveInterrupt.ino                    */
+/* File name        : LoopBackDemo.ino                                        */
 /* Project          : ESP32-CAN-DRIVER                                        */
 /* Description      : ESP32 CAN Self Test with Interrupt Handler              */
 /* ---------------------------------------------------------------------------*/
@@ -10,10 +10,12 @@
 /* Institution      : Ecole Centrale de Nantes                                */
 /* ---------------------------------------------------------------------------*/
 
+// https://www.esp32.com/viewtopic.php?t=6533&start=10
+
 //------------------------------- Board Check ----------------------------------
 
 #ifndef ARDUINO_ARCH_ESP32
-  #error "Select an ESP32 board"
+#error "Select an ESP32 board"
 #endif
 
 //------------------------------- Include files --------------------------------
@@ -24,14 +26,35 @@
 //  ESP32 Desired Bit Rate
 //——————————————————————————————————————————————————————————————————————————————
 
-static const uint32_t DESIRED_BIT_RATE = 1000UL * 1000UL ; // 1 Mb/s
+static const uint32_t DESIRED_BIT_RATE = 25UL * 1000UL ;
+
+//——————————————————————————————————————————————————————————————————————————————
+
+static volatile uint64_t gFallingEdgeTime = 0 ;
+static volatile uint64_t gMinDuration = UINT64_MAX ;
+static hw_timer_t * timer = nullptr ;
+
+//——————————————————————————————————————————————————————————————————————————————
+
+void IRAM_ATTR handleEdgeInterrupt (void) {
+  const uint64_t currentTime = timerRead (timer) ;
+  if (gFallingEdgeTime > 0) {
+    const uint64_t lowPulseDuration = currentTime - gFallingEdgeTime ;
+    if (gMinDuration > lowPulseDuration) {
+      gMinDuration = lowPulseDuration ;
+    }
+    gFallingEdgeTime = 0 ;
+  }else{
+    gFallingEdgeTime = currentTime ;
+  }
+}
 
 //——————————————————————————————————————————————————————————————————————————————
 //   SETUP
 //——————————————————————————————————————————————————————————————————————————————
 
 void setup() {
- //--- Switch on builtin led
+//--- Switch on builtin led
   pinMode (LED_BUILTIN, OUTPUT) ;
   digitalWrite (LED_BUILTIN, HIGH) ;
 //--- Start serial
@@ -39,8 +62,8 @@ void setup() {
   delay (100) ;
 //--- Configure ESP32 CAN
   Serial.println ("Configure ESP32 CAN") ;
-  ACAN_ESP32_Settings settings (DESIRED_BIT_RATE) ;
-  settings.mRequestedCANMode = ACAN_ESP32_Settings::LoopBackMode ;  // Select loopback mode
+  ACAN_ESP32_Settings settings (DESIRED_BIT_RATE);
+  settings.mRequestedCANMode = ACAN_ESP32_Settings::LoopBackMode ;
 //  settings.mRxPin = GPIO_NUM_4 ; // Optional, default Tx pin is GPIO_NUM_4
 //  settings.mTxPin = GPIO_NUM_5 ; // Optional, default Rx pin is GPIO_NUM_5
   const uint32_t errorCode = ACAN_ESP32::can.begin (settings) ;
@@ -60,61 +83,66 @@ void setup() {
     Serial.println (" bit/s") ;
     Serial.print ("Exact bit rate ?    ") ;
     Serial.println (settings.exactBitRate () ? "yes" : "no") ;
+    Serial.print ("Distance            ") ;
+    Serial.print (settings.ppmFromDesiredBitRate ()) ;
+    Serial.println (" ppm") ;
     Serial.print ("Sample point:       ") ;
     Serial.print (settings.samplePointFromBitStart ()) ;
     Serial.println ("%") ;
     Serial.println ("Configuration OK!");
-  }else {
+  } else {
     Serial.print ("Configuration error 0x") ;
     Serial.println (errorCode, HEX) ;
   }
+
+  delay (100) ;
+
+  attachInterrupt (settings.mTxPin, handleEdgeInterrupt, FALLING) ;
+  timer = timerBegin (0, 2, true) ;
+  // 0 = first timer
+  // 2 is prescaler so 80 MHz divided by 2 = 40 MHz signal
+  // true - counts up
+  timerStart (timer) ;
 }
 
 //——————————————————————————————————————————————————————————————————————————————
 
-static uint32_t gBlinkLedDate = 0;
+static uint32_t gBlinkLedDate = 0 ;
 static uint32_t gReceivedFrameCount = 0 ;
 static uint32_t gSentFrameCount = 0 ;
-
-static const uint32_t MESSAGE_COUNT = 10 * 1000 * 1000 ;
 
 //——————————————————————————————————————————————————————————————————————————————
 //   LOOP
 //——————————————————————————————————————————————————————————————————————————————
 
-void loop() {
+void loop () {
+  CANMessage frame ;
   if (gBlinkLedDate < millis ()) {
     gBlinkLedDate += 1000 ;
     digitalWrite (LED_BUILTIN, !digitalRead (LED_BUILTIN)) ;
-    Serial.print ("At ") ;
-    Serial.print (gBlinkLedDate / 1000) ;
-    Serial.print (" s, sent: ") ;
+    Serial.print ("Sent: ") ;
     Serial.print (gSentFrameCount) ;
-    Serial.print (" ") ;
-    Serial.print ("Received: ") ;
+    Serial.print (", receive: ") ;
     Serial.print (gReceivedFrameCount) ;
-    Serial.print (" ") ;
-    Serial.print (" STATUS 0x") ;
-    Serial.print (CAN_STATUS, HEX) ;
-    Serial.print (" RXERR ") ;
-    Serial.print (CAN_RX_ECR) ;
-    Serial.print (" TXERR ") ;
-    Serial.println (CAN_TX_ECR) ;
-  }
-
-  CANMessage frame ;
-  while (ACAN_ESP32::can.receive (frame)) {
-    gReceivedFrameCount += 1 ;
-  }
-
-  if (gSentFrameCount < MESSAGE_COUNT) {
-    frame.len = 1;
-
+    Serial.print (", duration: ") ;
+    Serial.print (gMinDuration) ;
+    Serial.print (" ticks, bit rate: ") ;
+    if (gMinDuration == UINT64_MAX) {
+      Serial.println ("*") ;
+    }else{
+      Serial.print ((2 * 40 * 1000 * 1000) / gMinDuration) ;
+      Serial.println (" bit/s") ;
+    }
+    gMinDuration = UINT64_MAX ;
+    gFallingEdgeTime = 0 ;
+    delay (500) ;
+    frame.id = 0x555 ;
     const bool ok = ACAN_ESP32::can.tryToSend (frame) ;
     if (ok) {
       gSentFrameCount += 1 ;
     }
   }
+  while (ACAN_ESP32::can.receive (frame)) {
+    gReceivedFrameCount += 1 ;
+  }
 }
-
-//——————————————————————————————————————————————————————————————————————————————

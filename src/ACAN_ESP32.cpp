@@ -311,18 +311,17 @@ void ACAN_ESP32::getReceivedMessage (CANMessage & outFrame) {
 //--------------------------------------------------------------------------------------------------
 
 bool ACAN_ESP32::tryToSend (const CANMessage & inMessage) {
-  bool sendMessage;
-  if (mDriverIsSending) {
-    portENTER_CRITICAL (&mux) ;
-    sendMessage = mDriverTransmitBuffer.append (inMessage);
-    portEXIT_CRITICAL (&mux) ;
-  }else{
-    portENTER_CRITICAL (&mux);
-    internalSendMessage (inMessage) ;
-    mDriverIsSending = true;
-    sendMessage = true;
-    portEXIT_CRITICAL (&mux);
-  }
+  bool sendMessage ;
+//--- Bug fixed in 1.0.2 (thanks to DirkMeintjies)
+  portENTER_CRITICAL (&mux) ;
+    if (mDriverIsSending) {
+      sendMessage = mDriverTransmitBuffer.append (inMessage);
+    }else{
+      internalSendMessage (inMessage) ;
+      mDriverIsSending = true;
+      sendMessage = true;
+    }
+  portEXIT_CRITICAL (&mux) ;
   return sendMessage ;
 }
 
