@@ -8,17 +8,7 @@
 /* Author           : Mohamed Irfanulla                                       */
 /* Supervisor       : Prof. Pierre Molinaro                                   */
 /* Institution      : Ecole Centrale de Nantes                                */
-/* ---------------------------------------------------------------------------*/
-/*  Version |  Date       | Change                                            */
-/* ---------------------------------------------------------------------------*/
-/*   V1.0   | 25 Apr 2019 | Creation                                          */
-/*   V1.1   | 03 May 2019 | Actual BitRate Calculation                        */
-/*   V1.2   | 06 May 2019 | Added Error Conditions                            */
-/*   V1.3   | 21 May 2019 | Added internal clock source  (APB CLOCK)          */
-/*   V1.4   | 04 Jun 2019 | Added CAN operating Mode                          */
-/*   V1.5   | 15 Jul 2019 | Added driver buffers                              */
-/*   V2.0   | 08 Aug 2019 | Message Control types                             */
-/* ---------------------------------------------------------------------------*/
+//--------------------------------------------------------------------------------------------------
 
 #pragma once
 
@@ -27,8 +17,15 @@
 //--------------------------------------------------------------------------------------------------
 
 #include <stdint.h>
+
+//--- Useless include, removed in release 1.0.3
 #ifdef ARDUINO
-  #include <freertos/FreeRTOS.h>
+//  #include <freertos/FreeRTOS.h>
+#endif
+
+//--- For getting gpio_num_t type declaration (added in release 1.0.3)
+#ifdef ARDUINO
+  #include <driver/adc.h>
 #endif
 
 //--------------------------------------------------------------------------------------------------
