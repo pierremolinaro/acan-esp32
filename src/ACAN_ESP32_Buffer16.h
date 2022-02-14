@@ -1,33 +1,20 @@
-/******************************************************************************/
-/* File name        : ACANBuffer16.h                                          */
-/* Project          : ESP32-CAN-DRIVER                                        */
-/* Description      : ESP32 CAN Driver Internal Buffer Handling               */
-/*                    This file is common for the CAN Controllers used        */
-/*                    MCP2515,MCP2517 https://github.com/pierremolinaro       */
-/* ---------------------------------------------------------------------------*/
-/* Copyright        : Copyright © 2019 Pierre Molinaro. All rights reserved.  */
-/* ---------------------------------------------------------------------------*/
-/* Author           : Mohamed Irfanulla                                       */
-/* Supervisor       : Prof. Pierre Molinaro                                   */
-/* Institution      : Ecole Centrale de Nantes                                */
-/* ---------------------------------------------------------------------------*/
+//--------------------------------------------------------------------------------------------------
 
-#ifndef ACAN_BUFFER_16_CLASS_DEFINED
-#define ACAN_BUFFER_16_CLASS_DEFINED
+#pragma once
 
-//------------------------------- Include files ----------------------------------------------------
+//--------------------------------------------------------------------------------------------------
 
 #include <CANMessage.h>
 
 //--------------------------------------------------------------------------------------------------
 
-class ACANBuffer16 {
+class ACAN_ESP32_Buffer16 {
 
   //································································································
   // Default constructor
   //································································································
 
-  public: ACANBuffer16 (void)  :
+  public: ACAN_ESP32_Buffer16 (void)  :
   mBuffer (NULL),
   mSize (0),
   mReadIndex (0),
@@ -39,7 +26,7 @@ class ACANBuffer16 {
   // Destructor
   //································································································
 
-  public: ~ ACANBuffer16 (void) {
+  public: ~ ACAN_ESP32_Buffer16 (void) {
     delete [] mBuffer ;
   }
 
@@ -126,13 +113,17 @@ class ACANBuffer16 {
   }
 
   //································································································
+  // Reset Peak Count
+  //································································································
+
+  public: inline void resetPeakCount (void) { mPeakCount = mCount ; }
+
+  //································································································
   // No copy
   //································································································
 
-  private: ACANBuffer16 (const ACANBuffer16 &) ;
-  private: ACANBuffer16 & operator = (const ACANBuffer16 &) ;
+  private: ACAN_ESP32_Buffer16 (const ACAN_ESP32_Buffer16 &) ;
+  private: ACAN_ESP32_Buffer16 & operator = (const ACAN_ESP32_Buffer16 &) ;
 } ;
 
 //--------------------------------------------------------------------------------------------------
-
-#endif

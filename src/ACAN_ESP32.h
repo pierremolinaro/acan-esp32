@@ -25,7 +25,7 @@
 #include <ACAN_ESP32_CANRegisters.h>
 #include <ACAN_ESP32_Settings.h>
 #include <CANMessage.h>
-#include <ACANBuffer16.h>
+#include <ACAN_ESP32_Buffer16.h>
 #include <ACAN_ESP32_AcceptanceFilters.h>
 
 //--------------------------------------------------------------------------------------------------
@@ -71,11 +71,13 @@ class ACAN_ESP32 {
 
   private: ACAN_ESP32_Filter::Format mAcceptedFrameFormat ;
 
-  private: ACANBuffer16 mDriverReceiveBuffer ;
+  private: ACAN_ESP32_Buffer16 mDriverReceiveBuffer ;
 
   public: inline uint16_t driverReceiveBufferSize (void) const { return mDriverReceiveBuffer.size () ;  }
   public: inline uint16_t driverReceiveBufferCount (void) const { return mDriverReceiveBuffer.count() ;  }
   public: inline uint16_t driverReceiveBufferPeakCount (void) const { return mDriverReceiveBuffer.peakCount () ; }
+
+  public: inline void resetDriverReceiveBufferPeakCount (void) { mDriverReceiveBuffer.resetPeakCount () ; }
 
   //································································································
   //    Transmitting messages
@@ -88,13 +90,14 @@ class ACAN_ESP32 {
   //    Transmit buffer
   //································································································
 
-  private: ACANBuffer16 mDriverTransmitBuffer ;
+  private: ACAN_ESP32_Buffer16 mDriverTransmitBuffer ;
   private: bool mDriverIsSending ;
 
   public: inline uint16_t driverTransmitBufferSize (void) const { return mDriverTransmitBuffer.size () ; }
   public: inline uint16_t driverTransmitBufferCount (void) const { return mDriverTransmitBuffer.count () ; }
   public: inline uint16_t driverTransmitBufferPeakCount (void) const { return mDriverTransmitBuffer.peakCount () ; }
 
+  public: inline void resetDriverTransmitBufferPeakCount (void) { mDriverTransmitBuffer.resetPeakCount () ; }
 
   //································································································
   //    Error codes returned by begin
