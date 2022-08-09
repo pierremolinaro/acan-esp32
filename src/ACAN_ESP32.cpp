@@ -145,22 +145,29 @@ void ACAN_ESP32::setAcceptanceFilter (const ACAN_ESP32_Filter & inFilter) {
 uint32_t ACAN_ESP32::begin (const ACAN_ESP32_Settings & inSettings,
                             const ACAN_ESP32_Filter & inFilterSettings) {
   uint32_t errorCode = 0 ; // Ok be default
-//--- Enable CAN module
+//--------------------------------- Enable CAN module
   //----Access the CAN Peripheral registers and initialize the CLOCK
   //https://github.com/ThomasBarth/ESP32-CAN-Driver/blob/master/components/can/CAN.c
   //Function periph_module_enable(); - https://github.com/espressif/esp-idf/blob/master/components/driver/periph_ctrl.c
-  periph_module_enable (PERIPH_CAN_MODULE);
-//--- Set GPIO pins
+  periph_module_enable (PERIPH_CAN_MODULE) ;
+//--------------------------------- Set GPIO pins
   setGPIOPins (inSettings.mTxPin, inSettings.mRxPin);
 //--------------------------------- Required: It is must to enter RESET Mode to write the Configuration Registers
   while ((CAN_MODE & CAN_MODE_RESET) == 0) {
     CAN_MODE = CAN_MODE_RESET ;
   }
   if ((CAN_MODE & CAN_MODE_RESET) == 0) {
-    errorCode = kNotInRestModeInConfiguration ;
+    errorCode = kNotInResetModeInConfiguration ;
   }
+//--------------------------------- Disable Interupts
+  CAN_IER = 0 ;
+//   if (mInterruptHandler != nullptr) {
+//     esp_intr_disable (mInterruptHandler) ;
+//     esp_intr_free (mInterruptHandler) ;
+//     mInterruptHandler = nullptr ;
+//   }
 //--------------------------------- Use Pelican Mode
-  CAN_CLK_DIVIDER = CAN_PELICAN_MODE;
+  CAN_CLK_DIVIDER = CAN_PELICAN_MODE ;
 //---- Check the Register access and bit timing settings before writing to the Bit Timing Registers
   CAN_BTR0 = 0x55 ;
   bool ok = CAN_BTR0 == 0x55 ;
@@ -192,11 +199,10 @@ uint32_t ACAN_ESP32::begin (const ACAN_ESP32_Settings & inSettings,
 //--------------------------------- Set and clear the error counters to default value
   CAN_EWLR = 96 ;
   CAN_RX_ECR = 0 ;
-  CAN_TX_ECR = 0 ;
 //--------------------------------- Clear the Interrupt Registers
   const uint8_t unusedVariable __attribute__((unused)) = CAN_INTERRUPT ;
 //--------------------------------- Set Interrupt Service Routine
-  esp_intr_alloc (ETS_CAN_INTR_SOURCE, 0, isr, this, nullptr) ;
+  esp_intr_alloc (ETS_CAN_INTR_SOURCE, 0, isr, this, & mInterruptHandler) ;
 //--------------------------------- Enable Interupts
   CAN_IER = CAN_INTERRUPT_TX_ENABLE | CAN_INTERRUPT_RX_ENABLE ;
 //--------------------------------- Set to Requested Mode
@@ -283,7 +289,7 @@ void ACAN_ESP32::getReceivedMessage (CANMessage & outFrame) {
   outFrame.ext = (frameInfo & CAN_FRAME_FORMAT_EFF) != 0 ;
 
   //-----------Standard Frame
-  if(!outFrame.ext) {
+  if (!outFrame.ext) {
     uint32_t identifier =  uint32_t (CAN_ID_SFF(0)) << 3 ;
              identifier |= uint32_t (CAN_ID_SFF(1)) >> 5 ;
     outFrame.id = identifier;
@@ -291,11 +297,11 @@ void ACAN_ESP32::getReceivedMessage (CANMessage & outFrame) {
     for (uint8_t i=0 ; i<outFrame.len ; i++) {
       outFrame.data[i] = CAN_DATA_SFF(i);
     }
-  }else { //-----------Extended Frame
-    uint32_t identifier =  ((uint32_t)CAN_ID_EFF(0)) << 21 ;
-             identifier |= ((uint32_t)CAN_ID_EFF(1)) << 13 ;
-             identifier |= ((uint32_t)CAN_ID_EFF(2)) << 5  ;
-             identifier |= ((uint32_t)CAN_ID_EFF(3)) >> 3  ;
+  }else{ //-----------Extended Frame
+    uint32_t identifier =  uint32_t (CAN_ID_EFF(0)) << 21 ;
+             identifier |= uint32_t (CAN_ID_EFF(1)) << 13 ;
+             identifier |= uint32_t (CAN_ID_EFF(2)) << 5  ;
+             identifier |= uint32_t (CAN_ID_EFF(3)) >> 3  ;
     outFrame.id = identifier;
 
     for (uint8_t i=0 ; i<outFrame.len ; i++) {
@@ -318,8 +324,8 @@ bool ACAN_ESP32::tryToSend (const CANMessage & inMessage) {
       sendMessage = mDriverTransmitBuffer.append (inMessage);
     }else{
       internalSendMessage (inMessage) ;
-      mDriverIsSending = true;
-      sendMessage = true;
+      mDriverIsSending = true ;
+      sendMessage = true ;
     }
   portEXIT_CRITICAL (&mux) ;
   return sendMessage ;
@@ -339,8 +345,8 @@ void ACAN_ESP32::internalSendMessage (const CANMessage &inFrame) {
 //--- Identifier and data
   if (!inFrame.ext) { //-------Standard Frame
   //--- Set ID
-    CAN_ID_SFF(0)  = uint8_t (inFrame.id >> 3) ;
-    CAN_ID_SFF(1)  = uint8_t (inFrame.id << 5) ;
+    CAN_ID_SFF(0) = uint8_t (inFrame.id >> 3) ;
+    CAN_ID_SFF(1) = uint8_t (inFrame.id << 5) ;
   //--- Set data
     for (uint8_t i=0 ; i<dlc ; i++) {
       CAN_DATA_SFF (i) = inFrame.data [i];

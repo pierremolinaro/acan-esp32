@@ -22,7 +22,6 @@
 
 #include <freertos/FreeRTOS.h>
 #include <freertos/queue.h>
-//#include <esp_intr.h>
 #include <esp_intr_alloc.h>
 #include <soc/dport_reg.h>
 #include <driver/periph_ctrl.h>
@@ -37,7 +36,7 @@ static const uint32_t ESP32CAN_BASE = 0x3FF6B000 ;
 // CAN_MODE
 //--------------------------------------------------------------------------------------------------
 
-#define CAN_MODE        (*((volatile uint32_t *)(ESP32CAN_BASE)))
+#define CAN_MODE (*((volatile uint32_t *)(ESP32CAN_BASE)))
 
 // Bit definitions for CAN_MODE
 static const uint32_t CAN_MODE_RESET      = 0x01 ;
@@ -49,7 +48,7 @@ static const uint32_t CAN_MODE_ACCFILTER  = 0x08 ;
 // CAN_CMD
 //--------------------------------------------------------------------------------------------------
 
-#define CAN_CMD         (*((volatile uint32_t *)(ESP32CAN_BASE + 0x004)))
+#define CAN_CMD (*((volatile uint32_t *)(ESP32CAN_BASE + 0x004)))
 
 // Bit definitions for CAN_COMMAND
 static const uint32_t CAN_CMD_TX_REQ             = 0x01 ;
@@ -62,7 +61,7 @@ static const uint32_t CAN_CMD_SELF_RX_REQ        = 0x10 ;
 // CAN_STATUS
 //--------------------------------------------------------------------------------------------------
 
-#define CAN_STATUS      (*((const volatile uint32_t *)(ESP32CAN_BASE + 0x008)))
+#define CAN_STATUS (*((const volatile uint32_t *)(ESP32CAN_BASE + 0x008)))
 
 // Bit definitions for CAN_STATUS
 static const uint32_t CAN_STATUS_RXB           = 0x01 ;
@@ -78,7 +77,7 @@ static const uint32_t CAN_STATUS_BUS           = 0x80 ;
 // CAN_INTERRUPT
 //--------------------------------------------------------------------------------------------------
 
-#define CAN_INTERRUPT   (*((const volatile uint32_t *)(ESP32CAN_BASE + 0x00C)))
+#define CAN_INTERRUPT (*((const volatile uint32_t *)(ESP32CAN_BASE + 0x00C)))
 
 // Bit definitions for CAN_INTERRUPT
 static const uint32_t CAN_INTERRUPT_RX           = 0x01;
@@ -93,7 +92,7 @@ static const uint32_t CAN_INTERRUPT_BUS_ERR      = 0x80;
 // CAN_IER
 //--------------------------------------------------------------------------------------------------
 
-#define CAN_IER         (*((volatile uint32_t *)(ESP32CAN_BASE + 0x010)))
+#define CAN_IER (*((volatile uint32_t *)(ESP32CAN_BASE + 0x010)))
 
 static const uint32_t CAN_INTERRUPT_RX_ENABLE = 0x01 ;
 static const uint32_t CAN_INTERRUPT_TX_ENABLE = 0x02 ;
@@ -102,43 +101,43 @@ static const uint32_t CAN_INTERRUPT_TX_ENABLE = 0x02 ;
 // CAN_BTR0
 //--------------------------------------------------------------------------------------------------
 
-  #define CAN_BTR0        (*((volatile uint32_t *)(ESP32CAN_BASE + 0x018)))
+#define CAN_BTR0 (*((volatile uint32_t *)(ESP32CAN_BASE + 0x018)))
 
 //--------------------------------------------------------------------------------------------------
 // CAN_BTR1
 //--------------------------------------------------------------------------------------------------
 
-#define CAN_BTR1        (*((volatile uint32_t *)(ESP32CAN_BASE + 0x01C)))
+#define CAN_BTR1 (*((volatile uint32_t *)(ESP32CAN_BASE + 0x01C)))
 
 //--------------------------------------------------------------------------------------------------
 // CAN_ALC
 //--------------------------------------------------------------------------------------------------
 
-#define CAN_ALC         (*((volatile uint32_t *)(ESP32CAN_BASE + 0x02C)))
+#define CAN_ALC (*((volatile uint32_t *)(ESP32CAN_BASE + 0x02C)))
 
 //--------------------------------------------------------------------------------------------------
 // CAN_ECC
 //--------------------------------------------------------------------------------------------------
 
-#define CAN_ECC         (*((volatile uint32_t *)(ESP32CAN_BASE + 0x030)))
+#define CAN_ECC (*((volatile uint32_t *)(ESP32CAN_BASE + 0x030)))
 
 //--------------------------------------------------------------------------------------------------
 // CAN_EWLR
 //--------------------------------------------------------------------------------------------------
 
-#define CAN_EWLR        (*((volatile uint32_t *)(ESP32CAN_BASE + 0x034)))
+#define CAN_EWLR (*((volatile uint32_t *)(ESP32CAN_BASE + 0x034)))
 
 //--------------------------------------------------------------------------------------------------
 // CAN_RX_ECR
 //--------------------------------------------------------------------------------------------------
 
-#define CAN_RX_ECR      (*((volatile uint32_t *)(ESP32CAN_BASE + 0x038)))
+#define CAN_RX_ECR (*((volatile uint32_t *)(ESP32CAN_BASE + 0x038)))
 
 //--------------------------------------------------------------------------------------------------
 // CAN_TX_ECR
 //--------------------------------------------------------------------------------------------------
 
-#define CAN_TX_ECR      (*((volatile uint32_t *)(ESP32CAN_BASE + 0x03C)))
+#define CAN_TX_ECR (*((volatile uint32_t *)(ESP32CAN_BASE + 0x03C)))
 
 //--------------------------------------------------------------------------------------------------
 // CAN_FRAME_INFO
@@ -163,8 +162,8 @@ static const uint32_t CAN_RTR              = 0x40;
 #define CAN_ID_SFF(idx) (*((volatile uint32_t *)(ESP32CAN_BASE + 0x044 + 4 * (idx))))
 #define CAN_ID_EFF(idx) (*((volatile uint32_t *)(ESP32CAN_BASE + 0x044 + 4 * (idx))))
 
-#define CAN_MSG_STD_ID 0x7FF
-#define CAN_MSG_EXT_ID 0x1FFFFFFF
+#define CAN_MSG_STD_ID (0x7FF)
+#define CAN_MSG_EXT_ID (0x1FFFFFFF)
 
     //-----CAN Frame Data Register
     //----- DATA : length [8]

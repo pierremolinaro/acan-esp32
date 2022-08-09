@@ -47,7 +47,6 @@ class ACAN_ESP32 {
   public: uint32_t begin (const ACAN_ESP32_Settings & inSettings,
                           const ACAN_ESP32_Filter & inFilterSettings = ACAN_ESP32_Filter::acceptAll ()) ;
 
-
   //································································································
   //    CAN  Configuration Private Methods
   //································································································
@@ -103,7 +102,7 @@ class ACAN_ESP32 {
   //    Error codes returned by begin
   //································································································
 
-  public: static const uint32_t kNotInRestModeInConfiguration       = 1 << 16 ;
+  public: static const uint32_t kNotInResetModeInConfiguration      = 1 << 16 ;
   public: static const uint32_t kCANRegistersError                  = 1 << 17 ;
   public: static const uint32_t kTooFarFromDesiredBitRate           = 1 << 18 ;
   public: static const uint32_t kInconsistentBitRateSettings        = 1 << 19 ;
@@ -115,6 +114,7 @@ class ACAN_ESP32 {
   //································································································
 
   public: static void IRAM_ATTR isr (void * inUserArgument) ;
+  private: intr_handle_t mInterruptHandler ;
 
   public: void handleTXInterrupt (void) ;
   public: void handleRXInterrupt (void) ;

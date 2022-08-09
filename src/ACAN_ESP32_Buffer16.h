@@ -75,7 +75,7 @@ class ACAN_ESP32_Buffer16 {
         writeIndex -= mSize ;
       }
       mBuffer [writeIndex] = inMessage ;
-      mCount ++ ;
+      mCount += 1 ;
       if (mPeakCount < mCount) {
         mPeakCount = mCount ;
       }
@@ -122,8 +122,8 @@ class ACAN_ESP32_Buffer16 {
   // No copy
   //································································································
 
-  private: ACAN_ESP32_Buffer16 (const ACAN_ESP32_Buffer16 &) ;
-  private: ACAN_ESP32_Buffer16 & operator = (const ACAN_ESP32_Buffer16 &) ;
+  private: ACAN_ESP32_Buffer16 (const ACAN_ESP32_Buffer16 &) = delete ;
+  private: ACAN_ESP32_Buffer16 & operator = (const ACAN_ESP32_Buffer16 &) = delete ;
 } ;
 
 //--------------------------------------------------------------------------------------------------
