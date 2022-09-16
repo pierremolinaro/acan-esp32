@@ -61,6 +61,7 @@ class ACAN_ESP32 {
   //    Receiving messages
   //································································································
 
+  public: bool available (void) ;
   public: bool receive (CANMessage &outMessage) ;
   public: static void getReceivedMessage (CANMessage & outFrame) ;
 

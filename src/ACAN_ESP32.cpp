@@ -269,6 +269,11 @@ void ACAN_ESP32::handleRXInterrupt (void) {
 //   RECEPTION
 //--------------------------------------------------------------------------------------------------
 
+bool ACAN_ESP32::available (void) {
+    const bool hasReceivedMessage = mDriverReceiveBuffer.count () > 0 ;
+    return hasReceivedMessage ;
+}
+
 bool ACAN_ESP32::receive (CANMessage & outMessage) {
   portENTER_CRITICAL (&mux) ;
     const bool hasReceivedMessage = mDriverReceiveBuffer.remove (outMessage) ;
