@@ -154,6 +154,7 @@ uint32_t ACAN_ESP32::begin (const ACAN_ESP32_Settings & inSettings,
 //--------------------------------- Set GPIO pins
   setGPIOPins (inSettings.mTxPin, inSettings.mRxPin);
 //--------------------------------- Required: It is must to enter RESET Mode to write the Configuration Registers
+  TWAI_CMD_REG = TWAI_ABORT_TX ;
   while ((TWAI_MODE_REG & TWAI_RESET_MODE) == 0) {
     TWAI_MODE_REG = TWAI_RESET_MODE ;
   }
@@ -163,7 +164,6 @@ uint32_t ACAN_ESP32::begin (const ACAN_ESP32_Settings & inSettings,
 //--------------------------------- Disable Interupts
   TWAI_INT_ENA_REG = 0 ;
   if (mInterruptHandler != nullptr) {
-    esp_intr_disable (mInterruptHandler) ;
     esp_intr_free (mInterruptHandler) ;
     mInterruptHandler = nullptr ;
   }
@@ -213,6 +213,48 @@ uint32_t ACAN_ESP32::begin (const ACAN_ESP32_Settings & inSettings,
 }
 
 //--------------------------------------------------------------------------------------------------
+//--- Status Flags (returns 0 if no error)
+//  Bit 0 : hardware receive FIFO overflow
+//  Bit 1 : driver receive FIFO overflow
+//  Bit 2 : bus off
+//  Bit 3 : reset mode
+
+uint32_t ACAN_ESP32::statusFlags (void) const {
+  uint32_t result = 0 ; // Ok
+  const uint32_t status = TWAI_STATUS_REG ;
+//--- Hardware receive FIFO overflow ?
+  if ((status & TWAI_OVERRUN_ST) != 0) {
+    result |= 1U << 0 ;
+  }
+//--- Driver receive FIFO overflow ?
+  if (mDriverReceiveBuffer.didOverflow ()) {
+    result |= 1U << 1 ;
+  }
+//--- Bus off ?
+  if ((status & TWAI_BUS_OFF_ST) != 0) {
+    result |= 1U << 2 ;
+  }
+//--- Reset mode ?
+  if ((TWAI_MODE_REG & TWAI_RESET_MODE) != 0) {
+    result |= 1U << 3 ;
+  }
+//---
+  return result ;
+}
+
+//--------------------------------------------------------------------------------------------------
+
+bool ACAN_ESP32::recoverFromBusOff (void) const {
+  const bool isBusOff = (TWAI_STATUS_REG & TWAI_BUS_OFF_ST) != 0 ;
+  const bool inResetMode = (TWAI_MODE_REG & TWAI_RESET_MODE) != 0 ;
+  const bool recover = isBusOff && inResetMode ;
+  if (recover) {
+    TWAI_MODE_REG &= ~ TWAI_RESET_MODE ;
+  }
+  return recover ;
+}
+
+//--------------------------------------------------------------------------------------------------
 //   Interrupt Handler
 //--------------------------------------------------------------------------------------------------
 
@@ -222,10 +264,10 @@ void IRAM_ATTR ACAN_ESP32::isr (void * inUserArgument) {
   portENTER_CRITICAL (&mux) ;
   const uint32_t interrupt = TWAI_INT_RAW_REG ;
   if ((interrupt & TWAI_RX_INT_ST) != 0) {
-     myDriver->handleRXInterrupt();
+     myDriver->handleRXInterrupt () ;
   }
   if ((interrupt & TWAI_TX_INT_ST) != 0) {
-     myDriver->handleTXInterrupt();
+     myDriver->handleTXInterrupt () ;
   }
   portEXIT_CRITICAL (&mux) ;
 
@@ -270,10 +312,12 @@ void ACAN_ESP32::handleRXInterrupt (void) {
 //   RECEPTION
 //--------------------------------------------------------------------------------------------------
 
-bool ACAN_ESP32::available (void) {
-    const bool hasReceivedMessage = mDriverReceiveBuffer.count () > 0 ;
-    return hasReceivedMessage ;
+bool ACAN_ESP32::available (void) const {
+  const bool hasReceivedMessage = mDriverReceiveBuffer.count () > 0 ;
+  return hasReceivedMessage ;
 }
+
+//--------------------------------------------------------------------------------------------------
 
 bool ACAN_ESP32::receive (CANMessage & outMessage) {
   portENTER_CRITICAL (&mux) ;

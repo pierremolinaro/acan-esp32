@@ -61,8 +61,8 @@ class ACAN_ESP32 {
   //    Receiving messages
   //------------------------------------------------------------------------------------------------
 
-  public: bool available (void) ;
-  public: bool receive (CANMessage &outMessage) ;
+  public: bool available (void) const ;
+  public: bool receive (CANMessage & outMessage) ;
   public: static void getReceivedMessage (CANMessage & outFrame) ;
 
   //------------------------------------------------------------------------------------------------
@@ -126,9 +126,17 @@ class ACAN_ESP32 {
 
   //--- Status Flags (returns 0 if no error)
   //  Bit 0 : hardware receive FIFO overflow
+  //  Bit 1 : driver receive FIFO overflow
   //  Bit 2 : bus off
+  //  Bit 3 : reset mode
 
   public: uint32_t statusFlags (void) const ;
+
+  //------------------------------------------------------------------------------------------------
+  // Recover from Bus-Off
+  //------------------------------------------------------------------------------------------------
+
+  public: bool recoverFromBusOff (void) const ;
 
   //------------------------------------------------------------------------------------------------
   //    No Copy

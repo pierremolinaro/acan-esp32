@@ -28,7 +28,8 @@ static const byte MCP2515_SDI = 19 ; // SI input of MCP2515
 static const byte MCP2515_SDO = 18 ; // SO output of MCP2515
 
 static const byte MCP2515_CS  = 17 ; // CS input of MCP2515
-static const byte MCP2515_INT = 0 ; // INT output of MCP2515
+static const byte MCP2515_INT = 23 ; // INT output of MCP2515
+static const byte MCP2515_RESET = 27 ; // RESET input of MCP2515 (adapt to your design)
 
 //——————————————————————————————————————————————————————————————————————————————
 //  MCP2515 Driver object
@@ -46,14 +47,19 @@ static const uint32_t MCP2515_QUARTZ_FREQUENCY = 20UL * 1000UL * 1000UL ; // 20 
 // Desired Bit Rate
 //——————————————————————————————————————————————————————————————————————————————
 
-static const uint32_t DESIRED_BIT_RATE = 25UL * 1000UL ; // 1 Mb/s
+static const uint32_t DESIRED_BIT_RATE = 1000UL * 1000UL ; // 1 Mb/s
 
 //——————————————————————————————————————————————————————————————————————————————
 //   SETUP
 //——————————————————————————————————————————————————————————————————————————————
 
 void setup() {
- //--- Switch on builtin led
+//--- RESET MCP2515
+  pinMode (MCP2515_RESET, OUTPUT) ;
+  digitalWrite (MCP2515_RESET, LOW) ;
+  delay (10) ;
+  digitalWrite (MCP2515_RESET, HIGH) ;
+//--- Switch on builtin led
   pinMode (LED_BUILTIN, OUTPUT) ;
   digitalWrite (LED_BUILTIN, HIGH) ;
 //--- Start serial
@@ -76,7 +82,7 @@ void setup() {
   SPI.begin (MCP2515_SCK, MCP2515_SDO, MCP2515_SDI) ;
   Serial.println ("Configure ACAN2515") ;
   ACAN2515Settings settings2515 (MCP2515_QUARTZ_FREQUENCY, DESIRED_BIT_RATE) ;
-  const uint32_t errorCode2515 = can2515.begin (settings2515, [] {can2515.isr () ; }) ;
+  const uint32_t errorCode2515 = can2515.begin (settings2515, [] { can2515.isr () ; }) ;
   if (errorCode2515 == 0) {
     Serial.println ("ACAN2515 configuration: ok") ;
   }else{
@@ -106,13 +112,13 @@ void loop() {
     digitalWrite (LED_BUILTIN, !digitalRead (LED_BUILTIN)) ;
     Serial.print("SentESP32: ");
     Serial.print(gSentFrameCountESP32);
-    Serial.print("\t");
+    Serial.print(" ");
     Serial.print("Receive2515: ");
     Serial.print(gReceivedFrameCount2515);
-    Serial.print("\t");
+    Serial.print(" ");
     Serial.print("Sent2515: ");
     Serial.print(gSentFrameCount2515);
-    Serial.print("\t");
+    Serial.print(" ");
     Serial.print("ReceiveESP32: ");
     Serial.println(gReceivedFrameCountESP32);
   }
