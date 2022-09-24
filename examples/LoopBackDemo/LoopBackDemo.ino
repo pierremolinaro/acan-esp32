@@ -25,7 +25,7 @@
 //  ESP32 Desired Bit Rate
 //——————————————————————————————————————————————————————————————————————————————
 
-static const uint32_t DESIRED_BIT_RATE = 1000UL * 1000UL ; // 1 Mb/s
+static const uint32_t DESIRED_BIT_RATE = 100UL * 1000UL ; // 1 Mb/s
 
 //——————————————————————————————————————————————————————————————————————————————
 //   SETUP
@@ -107,16 +107,16 @@ void loop () {
     digitalWrite (LED_BUILTIN, !digitalRead (LED_BUILTIN)) ;
     Serial.print ("Sent: ") ;
     Serial.print (gSentFrameCount) ;
-    Serial.print ("\t") ;
+    Serial.print (" ") ;
     Serial.print ("Receive: ") ;
     Serial.print (gReceivedFrameCount) ;
-    Serial.print ("\t") ;
+    Serial.print (" ") ;
     Serial.print (" STATUS 0x") ;
-    Serial.print (CAN_STATUS, HEX) ;
+    Serial.print (TWAI_STATUS_REG, HEX) ;
     Serial.print (" RXERR ") ;
-    Serial.print (CAN_RX_ECR) ;
+    Serial.print (TWAI_RX_ERR_CNT_REG) ;
     Serial.print (" TXERR ") ;
-    Serial.println (CAN_TX_ECR) ;
+    Serial.println (TWAI_TX_ERR_CNT_REG) ;
     const bool ok = ACAN_ESP32::can.tryToSend (frame) ;
     if (ok) {
       gSentFrameCount += 1 ;

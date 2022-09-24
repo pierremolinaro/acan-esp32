@@ -66,10 +66,10 @@ void loop() {
 
 //--- Write Access to bus timming registers
   for (uint16_t i = 0; i <= 255; i++) {
-    CAN_BTR0 = byte (i) ;
-    CAN_BTR1 = byte (i) ;
-    const uint32_t value1 = CAN_BTR0 ;
-    const uint32_t value2 = CAN_BTR1 ;
+    TWAI_BUS_TIMING_0_REG = byte (i) ;
+    TWAI_BUS_TIMING_1_REG = byte (i) ;
+    const uint32_t value1 = TWAI_BUS_TIMING_0_REG ;
+    const uint32_t value2 = TWAI_BUS_TIMING_1_REG ;
     //      Serial.printf ("Value : %d---Reg BTR0 : %X \n",i,value1);
     //      Serial.printf ("Value : %d---Reg BTR1 : %X \n",i,value2);
     if ((i != value1) && (i != value2)) {

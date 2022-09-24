@@ -60,7 +60,7 @@ void loop () {
     Serial.println (" bit/s") ;
     ACAN_ESP32_Settings settings (bitRateArray [gBitRateIndex]) ;
     gBitRateIndex = (gBitRateIndex + 1) % 4 ;
- //   settings.mRequestedCANMode = ACAN_ESP32_Settings::LoopBackMode ;
+  //  settings.mRequestedCANMode = ACAN_ESP32_Settings::LoopBackMode ;
   //  settings.mRxPin = GPIO_NUM_4 ; // Optional, default Tx pin is GPIO_NUM_4
   //  settings.mTxPin = GPIO_NUM_5 ; // Optional, default Rx pin is GPIO_NUM_5
     const uint32_t errorCode = ACAN_ESP32::can.begin (settings) ;
@@ -98,11 +98,11 @@ void loop () {
     while (((sentCount < MESSAGE_COUNT) || (receiveCount < MESSAGE_COUNT)) && (gBlinkLedDate > millis ())) {
       if (statusPrintDate <= millis ()) {
         Serial.print ("  STATUS 0x") ;
-        Serial.print (CAN_STATUS, HEX) ;
+        Serial.print (TWAI_STATUS_REG, HEX) ;
         Serial.print (", RXERR ") ;
-        Serial.print (CAN_RX_ECR) ;
+        Serial.print (TWAI_RX_ERR_CNT_REG) ;
         Serial.print (", TXERR ") ;
-        Serial.println (CAN_TX_ECR) ;
+        Serial.println (TWAI_TX_ERR_CNT_REG) ;
         statusPrintDate += 250 ;
       }
       if (sentCount < MESSAGE_COUNT) {
@@ -113,11 +113,11 @@ void loop () {
           Serial.print ("  Sent ") ;
           Serial.print (sentCount) ;
           Serial.print (", STATUS 0x") ;
-          Serial.print (CAN_STATUS, HEX) ;
+          Serial.print (TWAI_STATUS_REG, HEX) ;
           Serial.print (", RXERR ") ;
-          Serial.print (CAN_RX_ECR) ;
+          Serial.print (TWAI_RX_ERR_CNT_REG) ;
           Serial.print (", TXERR ") ;
-          Serial.println (CAN_TX_ECR) ;
+          Serial.println (TWAI_TX_ERR_CNT_REG) ;
         }
       }
       CANMessage frame ;

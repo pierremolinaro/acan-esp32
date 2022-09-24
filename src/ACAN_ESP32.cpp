@@ -49,10 +49,10 @@ void ACAN_ESP32::setGPIOPins (const gpio_num_t inTXPin,
                               const gpio_num_t inRXPin) {
 //--- Set TX pin
   pinMode (inTXPin, OUTPUT) ;
-  pinMatrixOutAttach (inTXPin, CAN_TX_IDX, false, false) ;
+  pinMatrixOutAttach (inTXPin, TWAI_TX_IDX, false, false) ;
 //--- Set RX pin
   pinMode (inRXPin, INPUT) ;
-  pinMatrixInAttach (inRXPin, CAN_RX_IDX, false) ;
+  pinMatrixInAttach (inRXPin, TWAI_RX_IDX, false) ;
 }
 
 //--------------------------------------------------------------------------------------------------
@@ -74,22 +74,22 @@ void ACAN_ESP32::setRequestedCANMode (const ACAN_ESP32_Settings & inSettings,
     case ACAN_ESP32_Settings::NormalMode :
       break ;
     case ACAN_ESP32_Settings::ListenOnlyMode :
-      requestedMode = CAN_MODE_LISTENONLY ;
+      requestedMode = TWAI_LISTEN_ONLY_MODE ;
       break ;
     case ACAN_ESP32_Settings::LoopBackMode :
-      requestedMode = CAN_MODE_SELFTEST ;
+      requestedMode = TWAI_SELF_TEST_MODE ;
       break ;
   }
 
   if (inFilter.mAMFSingle) {
-    requestedMode |= CAN_MODE_ACCFILTER ;
+    requestedMode |= TWAI_RX_FILTER_MODE ;
   }
 
-  CAN_MODE = requestedMode | CAN_MODE_RESET ;
+  TWAI_MODE_REG = requestedMode | TWAI_RESET_MODE ;
 
   do{
-    CAN_MODE = requestedMode ;
-  }while ((CAN_MODE & CAN_MODE_RESET) != 0) ;
+    TWAI_MODE_REG = requestedMode ;
+  }while ((TWAI_MODE_REG & TWAI_RESET_MODE) != 0) ;
 }
 
 //--------------------------------------------------------------------------------------------------
@@ -107,13 +107,15 @@ inline void ACAN_ESP32::setBitTimingSettings (const ACAN_ESP32_Settings & inSett
 //         bit (4 - 6) -> TimeSegment 2 (Tseg2)
 //         bit (7)     -> TripleSampling? (SAM)
 
-  CAN_BTR0 = ((inSettings.mRJW - 1) << 6) |            // SJW
-             ((inSettings.mBitRatePrescaler - 1) << 0) // BRP
+  TWAI_BUS_TIMING_0_REG =
+    ((inSettings.mRJW - 1) << 6) |            // SJW
+    ((inSettings.mBitRatePrescaler - 1) << 0) // BRP
   ;
 
-  CAN_BTR1 = ((inSettings.mTripleSampling) << 7)   | // Sampling
-             ((inSettings.mTimeSegment2 - 1) << 4) | // Tseg2
-             ((inSettings.mTimeSegment1 - 1) << 0)   // Tseg1
+  TWAI_BUS_TIMING_1_REG =
+    ((inSettings.mTripleSampling) << 7)   | // Sampling
+    ((inSettings.mTimeSegment2 - 1) << 4) | // Tseg2
+    ((inSettings.mTimeSegment1 - 1) << 0)   // Tseg1
   ;
 }
 
@@ -122,20 +124,19 @@ inline void ACAN_ESP32::setBitTimingSettings (const ACAN_ESP32_Settings & inSett
 void ACAN_ESP32::setAcceptanceFilter (const ACAN_ESP32_Filter & inFilter) {
 //--- Write the Code and Mask Registers with Acceptance Filter Settings
   if (inFilter.mAMFSingle) {
-    CAN_MODE |= CAN_MODE_ACCFILTER ;
+    TWAI_MODE_REG |= TWAI_RX_FILTER_MODE ;
   }
   mAcceptedFrameFormat = inFilter.mFormat ;
 
-  CAN_ACC_CODE_FILTER (0) = inFilter.mACR0 ;
-  CAN_ACC_CODE_FILTER (1) = inFilter.mACR1 ;
-  CAN_ACC_CODE_FILTER (2) = inFilter.mACR2 ;
-  CAN_ACC_CODE_FILTER (3) = inFilter.mACR3 ;
+  TWAI_ACC_CODE_FILTER (0) = inFilter.mACR0 ;
+  TWAI_ACC_CODE_FILTER (1) = inFilter.mACR1 ;
+  TWAI_ACC_CODE_FILTER (2) = inFilter.mACR2 ;
+  TWAI_ACC_CODE_FILTER (3) = inFilter.mACR3 ;
 
-  CAN_ACC_MASK_FILTER (0) = inFilter.mAMR0 ;
-  CAN_ACC_MASK_FILTER (1) = inFilter.mAMR1 ;
-  CAN_ACC_MASK_FILTER (2) = inFilter.mAMR2 ;
-  CAN_ACC_MASK_FILTER (3) = inFilter.mAMR3 ;
-
+  TWAI_ACC_MASK_FILTER (0) = inFilter.mAMR0 ;
+  TWAI_ACC_MASK_FILTER (1) = inFilter.mAMR1 ;
+  TWAI_ACC_MASK_FILTER (2) = inFilter.mAMR2 ;
+  TWAI_ACC_MASK_FILTER (3) = inFilter.mAMR3 ;
 }
 
 //--------------------------------------------------------------------------------------------------
@@ -149,31 +150,31 @@ uint32_t ACAN_ESP32::begin (const ACAN_ESP32_Settings & inSettings,
   //----Access the CAN Peripheral registers and initialize the CLOCK
   //https://github.com/ThomasBarth/ESP32-CAN-Driver/blob/master/components/can/CAN.c
   //Function periph_module_enable(); - https://github.com/espressif/esp-idf/blob/master/components/driver/periph_ctrl.c
-  periph_module_enable (PERIPH_CAN_MODULE) ;
+  periph_module_enable (PERIPH_TWAI_MODULE) ;
 //--------------------------------- Set GPIO pins
   setGPIOPins (inSettings.mTxPin, inSettings.mRxPin);
 //--------------------------------- Required: It is must to enter RESET Mode to write the Configuration Registers
-  while ((CAN_MODE & CAN_MODE_RESET) == 0) {
-    CAN_MODE = CAN_MODE_RESET ;
+  while ((TWAI_MODE_REG & TWAI_RESET_MODE) == 0) {
+    TWAI_MODE_REG = TWAI_RESET_MODE ;
   }
-  if ((CAN_MODE & CAN_MODE_RESET) == 0) {
+  if ((TWAI_MODE_REG & TWAI_RESET_MODE) == 0) {
     errorCode = kNotInResetModeInConfiguration ;
   }
 //--------------------------------- Disable Interupts
-  CAN_IER = 0 ;
-//   if (mInterruptHandler != nullptr) {
-//     esp_intr_disable (mInterruptHandler) ;
-//     esp_intr_free (mInterruptHandler) ;
-//     mInterruptHandler = nullptr ;
-//   }
+  TWAI_INT_ENA_REG = 0 ;
+  if (mInterruptHandler != nullptr) {
+    esp_intr_disable (mInterruptHandler) ;
+    esp_intr_free (mInterruptHandler) ;
+    mInterruptHandler = nullptr ;
+  }
 //--------------------------------- Use Pelican Mode
-  CAN_CLK_DIVIDER = CAN_PELICAN_MODE ;
+  TWAI_CLOCK_DIVIDER_REG = TWAI_EXT_MODE ;
 //---- Check the Register access and bit timing settings before writing to the Bit Timing Registers
-  CAN_BTR0 = 0x55 ;
-  bool ok = CAN_BTR0 == 0x55 ;
+  TWAI_BUS_TIMING_0_REG = 0x55 ;
+  bool ok = TWAI_BUS_TIMING_0_REG == 0x55 ;
   if (ok) {
-    CAN_BTR0 = 0xAA ;
-    ok = CAN_BTR0 == 0xAA ;
+    TWAI_BUS_TIMING_0_REG = 0xAA ;
+    ok = TWAI_BUS_TIMING_0_REG == 0xAA ;
   }
   if (!ok) {
     errorCode |= kCANRegistersError ;
@@ -197,14 +198,14 @@ uint32_t ACAN_ESP32::begin (const ACAN_ESP32_Settings & inSettings,
 //--------------------------------- Set the Acceptance Filter
   setAcceptanceFilter (inFilterSettings) ;
 //--------------------------------- Set and clear the error counters to default value
-  CAN_EWLR = 96 ;
-  CAN_RX_ECR = 0 ;
+  TWAI_ERR_WARNING_LIMIT_REG = 96 ;
+  TWAI_RX_ERR_CNT_REG = 0 ;
 //--------------------------------- Clear the Interrupt Registers
-  const uint8_t unusedVariable __attribute__((unused)) = CAN_INTERRUPT ;
+  const uint8_t unusedVariable __attribute__((unused)) = TWAI_INT_RAW_REG ;
 //--------------------------------- Set Interrupt Service Routine
-  esp_intr_alloc (ETS_CAN_INTR_SOURCE, 0, isr, this, & mInterruptHandler) ;
+  esp_intr_alloc (ETS_TWAI_INTR_SOURCE, 0, isr, this, & mInterruptHandler) ;
 //--------------------------------- Enable Interupts
-  CAN_IER = CAN_INTERRUPT_TX_ENABLE | CAN_INTERRUPT_RX_ENABLE ;
+  TWAI_INT_ENA_REG = TWAI_TX_INT_ENA | TWAI_RX_INT_ENA ;
 //--------------------------------- Set to Requested Mode
   setRequestedCANMode (inSettings, inFilterSettings) ;
 //---
@@ -219,11 +220,11 @@ void IRAM_ATTR ACAN_ESP32::isr (void * inUserArgument) {
   ACAN_ESP32 * myDriver = (ACAN_ESP32 *) inUserArgument ;
 
   portENTER_CRITICAL (&mux) ;
-  const uint32_t interrupt = CAN_INTERRUPT ;
-  if ((interrupt & CAN_INTERRUPT_RX) != 0) {
+  const uint32_t interrupt = TWAI_INT_RAW_REG ;
+  if ((interrupt & TWAI_RX_INT_ST) != 0) {
      myDriver->handleRXInterrupt();
   }
-  if ((interrupt & CAN_INTERRUPT_TX) != 0) {
+  if ((interrupt & TWAI_TX_INT_ST) != 0) {
      myDriver->handleTXInterrupt();
   }
   portEXIT_CRITICAL (&mux) ;
@@ -279,37 +280,37 @@ bool ACAN_ESP32::receive (CANMessage & outMessage) {
 //--------------------------------------------------------------------------------------------------
 
 void ACAN_ESP32::getReceivedMessage (CANMessage & outFrame) {
-  const uint32_t frameInfo = CAN_FRAME_INFO ;
+  const uint32_t frameInfo = TWAI_FRAME_INFO ;
 
   outFrame.len = frameInfo & 0xF;
   if (outFrame.len > 8) {
     outFrame.len = 8 ;
   }
-  outFrame.rtr = (frameInfo & CAN_RTR) != 0;
-  outFrame.ext = (frameInfo & CAN_FRAME_FORMAT_EFF) != 0 ;
+  outFrame.rtr = (frameInfo & TWAI_RTR) != 0;
+  outFrame.ext = (frameInfo & TWAI_FRAME_FORMAT_EFF) != 0 ;
 
   //-----------Standard Frame
   if (!outFrame.ext) {
-    uint32_t identifier =  uint32_t (CAN_ID_SFF(0)) << 3 ;
-             identifier |= uint32_t (CAN_ID_SFF(1)) >> 5 ;
+    uint32_t identifier =  uint32_t (TWAI_ID_SFF(0)) << 3 ;
+             identifier |= uint32_t (TWAI_ID_SFF(1)) >> 5 ;
     outFrame.id = identifier;
 
     for (uint8_t i=0 ; i<outFrame.len ; i++) {
-      outFrame.data[i] = CAN_DATA_SFF(i);
+      outFrame.data[i] = TWAI_DATA_SFF(i);
     }
   }else{ //-----------Extended Frame
-    uint32_t identifier =  uint32_t (CAN_ID_EFF(0)) << 21 ;
-             identifier |= uint32_t (CAN_ID_EFF(1)) << 13 ;
-             identifier |= uint32_t (CAN_ID_EFF(2)) << 5  ;
-             identifier |= uint32_t (CAN_ID_EFF(3)) >> 3  ;
+    uint32_t identifier =  uint32_t (TWAI_ID_EFF(0)) << 21 ;
+             identifier |= uint32_t (TWAI_ID_EFF(1)) << 13 ;
+             identifier |= uint32_t (TWAI_ID_EFF(2)) << 5  ;
+             identifier |= uint32_t (TWAI_ID_EFF(3)) >> 3  ;
     outFrame.id = identifier;
 
     for (uint8_t i=0 ; i<outFrame.len ; i++) {
-      outFrame.data[i] = CAN_DATA_EFF(i);
+      outFrame.data[i] = TWAI_DATA_EFF(i);
     }
   }
 
-  CAN_CMD = CAN_CMD_RELEASE_RXB;
+  TWAI_CMD_REG = TWAI_RELEASE_BUF ;
 }
 
 //--------------------------------------------------------------------------------------------------
@@ -337,33 +338,33 @@ void ACAN_ESP32::internalSendMessage (const CANMessage &inFrame) {
 //--- DLC
   const uint8_t dlc = (inFrame.len <= 8) ? inFrame.len : 8;
 //--- RTR
-  const uint8_t rtr = inFrame.rtr ? CAN_RTR : 0 ;
+  const uint8_t rtr = inFrame.rtr ? TWAI_RTR : 0 ;
 //--- Frame ID
-  const uint8_t id = (inFrame.ext) ? CAN_FRAME_FORMAT_EFF : CAN_FRAME_FORMAT_SFF ;
+  const uint8_t id = (inFrame.ext) ? TWAI_FRAME_FORMAT_EFF : TWAI_FRAME_FORMAT_SFF ;
 //--- Set Frame Information
-  CAN_FRAME_INFO = id | rtr | CAN_DLC (dlc) ;
+  TWAI_FRAME_INFO = id | rtr | TWAI_DLC (dlc) ;
 //--- Identifier and data
   if (!inFrame.ext) { //-------Standard Frame
   //--- Set ID
-    CAN_ID_SFF(0) = uint8_t (inFrame.id >> 3) ;
-    CAN_ID_SFF(1) = uint8_t (inFrame.id << 5) ;
+    TWAI_ID_SFF(0) = uint8_t (inFrame.id >> 3) ;
+    TWAI_ID_SFF(1) = uint8_t (inFrame.id << 5) ;
   //--- Set data
     for (uint8_t i=0 ; i<dlc ; i++) {
-      CAN_DATA_SFF (i) = inFrame.data [i];
+      TWAI_DATA_SFF (i) = inFrame.data [i];
     }
   }else{ //-------Extended Frame
   //--- Set ID
-   CAN_ID_EFF(0) = uint8_t (inFrame.id >> 21);
-   CAN_ID_EFF(1) = uint8_t (inFrame.id >> 13);
-   CAN_ID_EFF(2) = uint8_t (inFrame.id >> 5);
-   CAN_ID_EFF(3) = uint8_t (inFrame.id << 3);
+   TWAI_ID_EFF(0) = uint8_t (inFrame.id >> 21);
+   TWAI_ID_EFF(1) = uint8_t (inFrame.id >> 13);
+   TWAI_ID_EFF(2) = uint8_t (inFrame.id >> 5);
+   TWAI_ID_EFF(3) = uint8_t (inFrame.id << 3);
   //--- Set data
     for (uint8_t i=0 ; i<dlc ; i++) {
-      CAN_DATA_EFF (i) = inFrame.data [i];
+      TWAI_DATA_EFF (i) = inFrame.data [i];
     }
   }
 //--- Send command
-  CAN_CMD = ((CAN_MODE & CAN_MODE_SELFTEST) != 0) ? CAN_CMD_SELF_RX_REQ : CAN_CMD_TX_REQ ;
+  TWAI_CMD_REG = ((TWAI_MODE_REG & TWAI_SELF_TEST_MODE) != 0) ? TWAI_SELF_RX_REQ : TWAI_TX_REQ ;
 }
 
 //--------------------------------------------------------------------------------------------------

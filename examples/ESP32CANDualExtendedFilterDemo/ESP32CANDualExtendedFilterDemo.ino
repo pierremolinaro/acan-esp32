@@ -1,7 +1,7 @@
 //——————————————————————————————————————————————————————————————————————————————
 // This sketch is a demo for extended receive dual filter
 // It runs in any mode, this sketch uses LoopBack mode
-// In LoopBack mode, the ESP32 requires to connected to a CAN transceiver (see documentation)
+// In LoopBack mode, the ESP32 requires to be connected to a CAN transceiver (see documentation)
 //------------------------------- Board Check ----------------------------------
 
 #ifndef ARDUINO_ARCH_ESP32

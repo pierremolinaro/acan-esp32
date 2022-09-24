@@ -95,11 +95,11 @@ void loop() {
     Serial.print (gReceivedFrameCount) ;
     Serial.print (" ") ;
     Serial.print (" STATUS 0x") ;
-    Serial.print (CAN_STATUS, HEX) ;
+    Serial.print (TWAI_STATUS_REG, HEX) ;
     Serial.print (" RXERR ") ;
-    Serial.print (CAN_RX_ECR) ;
+    Serial.print (TWAI_RX_ERR_CNT_REG) ;
     Serial.print (" TXERR ") ;
-    Serial.println (CAN_TX_ECR) ;
+    Serial.println (TWAI_TX_ERR_CNT_REG) ;
   }
 
   CANMessage frame ;
