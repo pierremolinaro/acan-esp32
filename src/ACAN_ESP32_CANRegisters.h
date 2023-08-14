@@ -1,36 +1,31 @@
-/******************************************************************************/
-/* File name        : ESP32ACANRegisters.h                                    */
-/* Project          : ESP32-CAN-DRIVER                                        */
-/* Description      : ESP32 CAN Peripheral Registers                          */
-/* ---------------------------------------------------------------------------*/
-/* Copyright        : Copyright © 2019 Pierre Molinaro. All rights reserved.  */
-/* ---------------------------------------------------------------------------*/
-/* Author           : Mohamed Irfanulla                                       */
-/* Supervisor       : Prof. Pierre Molinaro                                   */
-/* Institution      : Ecole Centrale de Nantes                                */
-/* ---------------------------------------------------------------------------*/
-/*  Version |  Date       | Change                                            */
-/* ---------------------------------------------------------------------------*/
-/*   V1.0   | 20 May 2019 | Configuration Registers                           */
-/*   V1.1   | 03 Jun 2019 | Added Shared Registers                            */
-/*   V1.2   | 24 Jun 2019 | Registers defined as 32-bit                       */
-/* ---------------------------------------------------------------------------*/
 
 #pragma once
 
 //------------------------------- Include files ----------------------------------------------------
 
+#include <stdint.h>
+#include <driver/periph_ctrl.h>
+
 #include <freertos/FreeRTOS.h>
 #include <freertos/queue.h>
 #include <esp_intr_alloc.h>
-#include <soc/dport_reg.h>
-#include <driver/periph_ctrl.h>
+//#include <soc/dport_reg.h>
 
 //--------------------------------------------------------------------------------------------------
 //   ESP32 TWAI REGISTERS
 //--------------------------------------------------------------------------------------------------
 
-static const uint32_t ESP32_TWAI_BASE = 0x3FF6B000 ;
+#if defined (ARDUINO_ESP32S3_DEV)
+  static const uint32_t ESP32_TWAI_BASE = DR_REG_TWAI_BASE ; // 0x6002B000
+#elif defined (ARDUINO_ESP32S2_DEV)
+  #error "ESP32S2 has no TWAI (CAN) module"
+#elif defined (ARDUINO_ESP32C3_DEV)
+  static const uint32_t ESP32_TWAI_BASE = DR_REG_TWAI_BASE ; // 0x6002B000
+#elif defined (ARDUINO_ARCH_ESP32)
+  static const uint32_t ESP32_TWAI_BASE = DR_REG_CAN_BASE ; // 0x3ff6B000
+#else
+  #error "Unknown ESP32 arch"
+#endif
 
 //--------------------------------------------------------------------------------------------------
 // TWAI_MODE_REG

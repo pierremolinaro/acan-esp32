@@ -21,6 +21,7 @@
 //------------------------------- Include files ----------------------------------------------------
 
 #include <ACAN_ESP32.h>
+#include <core_version.h>
 
 //--------------------------------------------------------------------------------------------------
 //   ESP32 Critical Section
@@ -49,9 +50,15 @@ void ACAN_ESP32::setGPIOPins (const gpio_num_t inTXPin,
                               const gpio_num_t inRXPin) {
 //--- Set TX pin
   pinMode (inTXPin, OUTPUT) ;
+//   #if defined (ARDUINO_ESP32_RELEASE_1_0_6) || defined (ARDUINO_ESP32_RELEASE_1_0_5)
+//     const uint8_t TWAI_TX_IDX = CAN_TX_IDX ;
+//   #endif
   pinMatrixOutAttach (inTXPin, TWAI_TX_IDX, false, false) ;
 //--- Set RX pin
   pinMode (inRXPin, INPUT) ;
+//   #if defined (ARDUINO_ESP32_RELEASE_1_0_6) || defined (ARDUINO_ESP32_RELEASE_1_0_5)
+//     const uint8_t TWAI_RX_IDX = CAN_RX_IDX ;
+//   #endif
   pinMatrixInAttach (inRXPin, TWAI_RX_IDX, false) ;
 }
 
@@ -150,6 +157,9 @@ uint32_t ACAN_ESP32::begin (const ACAN_ESP32_Settings & inSettings,
   //----Access the CAN Peripheral registers and initialize the CLOCK
   //https://github.com/ThomasBarth/ESP32-CAN-Driver/blob/master/components/can/CAN.c
   //Function periph_module_enable(); - https://github.com/espressif/esp-idf/blob/master/components/driver/periph_ctrl.c
+//   #if defined (ARDUINO_ESP32_RELEASE_1_0_6) || defined (ARDUINO_ESP32_RELEASE_1_0_5)
+//     const periph_module_t PERIPH_TWAI_MODULE = PERIPH_CAN_MODULE ;
+//   #endif
   periph_module_enable (PERIPH_TWAI_MODULE) ;
 //--------------------------------- Set GPIO pins
   setGPIOPins (inSettings.mTxPin, inSettings.mRxPin);
@@ -203,6 +213,9 @@ uint32_t ACAN_ESP32::begin (const ACAN_ESP32_Settings & inSettings,
 //--------------------------------- Clear the Interrupt Registers
   const uint8_t unusedVariable __attribute__((unused)) = TWAI_INT_RAW_REG ;
 //--------------------------------- Set Interrupt Service Routine
+//   #if defined (ARDUINO_ESP32_RELEASE_1_0_6) || defined (ARDUINO_ESP32_RELEASE_1_0_5)
+//     const int ETS_TWAI_INTR_SOURCE = ETS_CAN_INTR_SOURCE ;
+//   #endif
   esp_intr_alloc (ETS_TWAI_INTR_SOURCE, 0, isr, this, & mInterruptHandler) ;
 //--------------------------------- Enable Interupts
   TWAI_INT_ENA_REG = TWAI_TX_INT_ENA | TWAI_RX_INT_ENA ;
