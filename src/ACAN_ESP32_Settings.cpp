@@ -1,29 +1,12 @@
-/******************************************************************************/
-/* File name        : ACAN_ESP32_Settings.cpp                                 */
-/* Project          : ESP32-CAN-DRIVER                                        */
-/* Description      : ESP32 CAN Bit Timing Calculator and Initial settings    */
-/* ---------------------------------------------------------------------------*/
-/* Copyright        : Copyright © 2019 Pierre Molinaro. All rights reserved.  */
-/* ---------------------------------------------------------------------------*/
-/* Author           : Mohamed Irfanulla                                       */
-/* Supervisor       : Prof. Pierre Molinaro                                   */
-/* Institution      : Ecole Centrale de Nantes                                */
-/* ---------------------------------------------------------------------------*/
-/*  Version |  Date       | Change                                            */
-/* ---------------------------------------------------------------------------*/
-/*   V1.0   | 25 Apr 2019 | Creation                                          */
-/*   V1.1   | 03 May 2019 | Actual BitRate Calculation                        */
-/*   V1.2   | 06 May 2019 | Added Error Conditions                            */
-/*   V1.3   | 21 May 2019 | Added internal clock source (APB CLOCK)           */
-/* ---------------------------------------------------------------------------*/
-
-//------------------------------- Include files ----------------------------------------------------
+//----------------------------------------------------------------------------------------
+// Include files
+//----------------------------------------------------------------------------------------
 
 #include "ACAN_ESP32_Settings.h"
 
-//--------------------------------------------------------------------------------------------------
+//----------------------------------------------------------------------------------------
 //    CAN Settings
-//--------------------------------------------------------------------------------------------------
+//----------------------------------------------------------------------------------------
 
 ACAN_ESP32_Settings::ACAN_ESP32_Settings (const uint32_t inDesiredBitRate,
                                           const uint32_t inTolerancePPM) :
@@ -77,21 +60,21 @@ mDesiredBitRate (inDesiredBitRate) {
   mBitRateClosedToDesiredRate = (diff * ppm) <= (uint64_t (W) * inTolerancePPM) ;
 }
 
-//--------------------------------------------------------------------------------------------------
+//----------------------------------------------------------------------------------------
 
 uint32_t ACAN_ESP32_Settings::actualBitRate (void) const {
   const uint32_t TQCount = SYNC_SEGMENT + mTimeSegment1 + mTimeSegment2 ;
   return CAN_CLOCK / mBitRatePrescaler / TQCount ;
 }
 
-//--------------------------------------------------------------------------------------------------
+//----------------------------------------------------------------------------------------
 
 bool ACAN_ESP32_Settings::exactBitRate (void) const {
   const uint32_t TQCount = SYNC_SEGMENT + mTimeSegment1 + mTimeSegment2 ;
   return CAN_CLOCK == (mDesiredBitRate * mBitRatePrescaler * TQCount) ;
 }
 
-//--------------------------------------------------------------------------------------------------
+//----------------------------------------------------------------------------------------
 
 uint32_t ACAN_ESP32_Settings::ppmFromDesiredBitRate(void) const {
   const uint32_t TQCount = SYNC_SEGMENT + mTimeSegment1 + mTimeSegment2 ;
@@ -101,7 +84,7 @@ uint32_t ACAN_ESP32_Settings::ppmFromDesiredBitRate(void) const {
   return uint32_t ((diff * ppm) / W) ;
 }
 
-//--------------------------------------------------------------------------------------------------
+//----------------------------------------------------------------------------------------
 
 uint32_t ACAN_ESP32_Settings::samplePointFromBitStart (void) const {
   const uint32_t TQCount = SYNC_SEGMENT + mTimeSegment1 + mTimeSegment2 ;
@@ -110,7 +93,7 @@ uint32_t ACAN_ESP32_Settings::samplePointFromBitStart (void) const {
   return (samplePoint * partPerCent) / TQCount ;
 }
 
-//--------------------------------------------------------------------------------------------------
+//----------------------------------------------------------------------------------------
 
 uint16_t ACAN_ESP32_Settings::CANBitSettingConsistency (void) const {
   uint16_t errorCode = 0 ; // No error
@@ -141,4 +124,4 @@ uint16_t ACAN_ESP32_Settings::CANBitSettingConsistency (void) const {
   return errorCode ;
 }
 
-//--------------------------------------------------------------------------------------------------
+//----------------------------------------------------------------------------------------

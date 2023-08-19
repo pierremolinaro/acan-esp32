@@ -1,23 +1,3 @@
-/******************************************************************************/
-/* File name        : ACAN_ESP32.cpp                                          */
-/* Project          : ESP32-CAN-DRIVER                                        */
-/* Description      : ESP32 CAN Driver                                        */
-/* ---------------------------------------------------------------------------*/
-/* Copyright        : Copyright © 2019 Pierre Molinaro. All rights reserved.  */
-/* ---------------------------------------------------------------------------*/
-/* Author           : Mohamed Irfanulla                                       */
-/* Supervisor       : Prof. Pierre Molinaro                                   */
-/* Institution      : Ecole Centrale de Nantes                                */
-/* ---------------------------------------------------------------------------*/
-/*  Version | Change                                                          */
-/* ---------------------------------------------------------------------------*/
-/*   V1.0   | Creation                                                        */
-/*   V1.1   | Working by Polling (Extended Frames)                            */
-/*   V1.2   | Handling Standard Frames                                        */
-/*   V1.3   | Added Interrupt Handlers                                        */
-/*   V2.0   | Acceptance Filter Settings                                      */
-/* ---------------------------------------------------------------------------*/
-
 //----------------------------------------------------------------------------------------
 //   Include files
 //----------------------------------------------------------------------------------------
@@ -52,15 +32,9 @@ void ACAN_ESP32::setGPIOPins (const gpio_num_t inTXPin,
                               const gpio_num_t inRXPin) {
 //--- Set TX pin
   pinMode (inTXPin, OUTPUT) ;
-//   #if defined (ARDUINO_ESP32_RELEASE_1_0_6) || defined (ARDUINO_ESP32_RELEASE_1_0_5)
-//     const uint8_t TWAI_TX_IDX = CAN_TX_IDX ;
-//   #endif
   pinMatrixOutAttach (inTXPin, TWAI_TX_IDX, false, false) ;
 //--- Set RX pin
   pinMode (inRXPin, INPUT) ;
-//   #if defined (ARDUINO_ESP32_RELEASE_1_0_6) || defined (ARDUINO_ESP32_RELEASE_1_0_5)
-//     const uint8_t TWAI_RX_IDX = CAN_RX_IDX ;
-//   #endif
   pinMatrixInAttach (inRXPin, TWAI_RX_IDX, false) ;
 }
 
@@ -108,19 +82,28 @@ void ACAN_ESP32::setRequestedCANMode (const ACAN_ESP32_Settings & inSettings,
 inline void ACAN_ESP32::setBitTimingSettings (const ACAN_ESP32_Settings & inSettings) {
 // BUS TIMING Configuration of ESP32 CAN
 //     ACAN_ESP32_Settings calculates the best values for the desired bit Rate.
-//
-//  BTR0 : bit (0 - 5) -> Baud Rate Prescaller (BRP)
-//         bit (6 - 7) -> Resynchronization Jump Width (RJW)
-//
-//  BTR1 : bit (0 - 3) -> TimeSegment 1 (Tseg1)
+
+//--- Caution! TWAI_BUS_TIMING_0_REG is specific
+#ifdef CONFIG_IDF_TARGET_ESP32
+  //  BTR0 : bit (0 - 5) -> Baud Rate Prescaller (BRP)
+  //         bit (6 - 7) -> Resynchronization Jump Width (RJW)
+    TWAI_BUS_TIMING_0_REG =
+      ((inSettings.mRJW - 1) << 6) |            // SJW
+      ((inSettings.mBitRatePrescaler - 1) << 0) // BRP
+    ;
+#else
+  //  BTR0 : bit (00 - 13) -> Baud Rate Prescaller (BRP)
+  //         bit (14 - 15) -> Resynchronization Jump Width (RJW)
+    TWAI_BUS_TIMING_0_REG =
+      ((inSettings.mRJW - 1) << 14) |           // SJW
+      ((inSettings.mBitRatePrescaler - 1) << 0) // BRP
+    ;
+#endif
+
+
+//--- BTR1 : bit (0 - 3) -> TimeSegment 1 (Tseg1)
 //         bit (4 - 6) -> TimeSegment 2 (Tseg2)
 //         bit (7)     -> TripleSampling? (SAM)
-
-  TWAI_BUS_TIMING_0_REG =
-    ((inSettings.mRJW - 1) << 6) |            // SJW
-    ((inSettings.mBitRatePrescaler - 1) << 0) // BRP
-  ;
-
   TWAI_BUS_TIMING_1_REG =
     ((inSettings.mTripleSampling) << 7)   | // Sampling
     ((inSettings.mTimeSegment2 - 1) << 4) | // Tseg2
