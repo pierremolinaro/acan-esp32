@@ -88,7 +88,7 @@ void setup() {
   delay (100) ;
 
   attachInterrupt (settings.mTxPin, handleEdgeInterrupt, FALLING) ;
-  timer = timerBegin (0, 2, true) ;
+  timer = timerBegin (40'000'000) ;
   // 0 = first timer
   // 2 is prescaler so 80 MHz divided by 2 = 40 MHz signal
   // true - counts up

@@ -8,9 +8,10 @@
 
 #include <stdint.h>
 
-//--- For getting gpio_num_t type declaration (added in release 1.0.3)
+//--- For getting getApbFrequency function declaration
 #ifdef ARDUINO
-  #include <driver/adc.h>
+  #include <Arduino.h>
+//  #include <esp32-hal-cpu.h>
 #endif
 
 //----------------------------------------------------------------------------------------
@@ -18,9 +19,9 @@
 //----------------------------------------------------------------------------------------
 
 #ifdef ARDUINO
-  static const uint32_t CAN_CLOCK = APB_CLK_FREQ / 2 ; // APB_CLK_FREQ: 80 MHz APB CLOCK
+  inline uint32_t CAN_CLOCK (void) { return getApbFrequency () / 2 ; }// APB_CLK_FREQ: 80 MHz APB CLOCK
 #else
-  static const uint32_t CAN_CLOCK = 40 * 1000 * 1000 ; // 40 MHz
+  inline uint32_t CAN_CLOCK (void) { return 40 * 1000 * 1000 ; } // 40 MHz
 #endif
 
 //----------------------------------------------------------------------------------------
@@ -34,7 +35,11 @@ class ACAN_ESP32_Settings {
   // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
   //--- CAN driver operating modes
-    public: typedef enum : uint8_t {
+    public: typedef enum
+    #ifdef ARDUINO
+      : uint8_t
+    #endif
+      {
         NormalMode,
         ListenOnlyMode,
         LoopBackMode

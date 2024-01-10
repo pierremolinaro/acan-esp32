@@ -3,7 +3,8 @@
 //----------------------------------------------------------------------------------------
 
 #include <ACAN_ESP32.h>
-#include <core_version.h>
+
+#include <esp_private/periph_ctrl.h>
 
 //----------------------------------------------------------------------------------------
 //   ESP32 Critical Section
@@ -116,7 +117,7 @@ inline void ACAN_ESP32::setBitTimingSettings (const ACAN_ESP32_Settings & inSett
 void ACAN_ESP32::setAcceptanceFilter (const ACAN_ESP32_Filter & inFilter) {
 //--- Write the Code and Mask Registers with Acceptance Filter Settings
   if (inFilter.mAMFSingle) {
-    TWAI_MODE_REG |= TWAI_RX_FILTER_MODE ;
+    TWAI_MODE_REG = TWAI_MODE_REG | TWAI_RX_FILTER_MODE ;
   }
   mAcceptedFrameFormat = inFilter.mFormat ;
 
@@ -247,7 +248,7 @@ bool ACAN_ESP32::recoverFromBusOff (void) const {
   const bool inResetMode = (TWAI_MODE_REG & TWAI_RESET_MODE) != 0 ;
   const bool recover = isBusOff && inResetMode ;
   if (recover) {
-    TWAI_MODE_REG &= ~ TWAI_RESET_MODE ;
+    TWAI_MODE_REG = TWAI_MODE_REG & ~ TWAI_RESET_MODE ;
   }
   return recover ;
 }

@@ -15,13 +15,13 @@ mDesiredBitRate (inDesiredBitRate) {
   uint32_t bestBRP = MAX_BRP ;            // Setting for slowest bit rate
   uint32_t bestTQCount = MAX_TQ ;         // Setting for slowest bit rate
   uint32_t smallestError = UINT32_MAX ;
-
-  uint32_t BRP = CAN_CLOCK / (inDesiredBitRate * TQCount) ; // BRP: min(2) max(128)
+  const uint32_t CANClock = CAN_CLOCK () ;
+  uint32_t BRP = CANClock / (inDesiredBitRate * TQCount) ; // BRP: min(2) max(128)
 //--- Loop for finding best BRP and best TQCount
   while ((TQCount >= MIN_TQ) && (BRP <= MAX_BRP)) {
   //--- Compute error using BRP (caution: BRP should be > 0)
     if (BRP >= MIN_BRP) {
-      const uint32_t error = CAN_CLOCK - (inDesiredBitRate * TQCount * BRP) ; // error is always >= 0
+      const uint32_t error = CANClock - (inDesiredBitRate * TQCount * BRP) ; // error is always >= 0
       if (error < smallestError) {
         smallestError = error ;
         bestBRP = BRP ;
@@ -30,7 +30,7 @@ mDesiredBitRate (inDesiredBitRate) {
     }
   //--- Compute error using BRP+1 (caution: BRP+1 should be <= 128)
     if (BRP < MAX_BRP) {
-      const uint32_t error = (inDesiredBitRate * TQCount * (BRP + 1)) - CAN_CLOCK ; // error is always >= 0
+      const uint32_t error = (inDesiredBitRate * TQCount * (BRP + 1)) - CANClock ; // error is always >= 0
       if (error < smallestError) {
         smallestError = error ;
         bestBRP = BRP + 1 ;
@@ -39,7 +39,7 @@ mDesiredBitRate (inDesiredBitRate) {
     }
   //--- Continue with next value of TQCount
     TQCount -= 1 ;
-    BRP = CAN_CLOCK / (inDesiredBitRate * TQCount) ;
+    BRP = CANClock / (inDesiredBitRate * TQCount) ;
   }
 //--- Set the BRP
   mBitRatePrescaler = uint8_t (bestBRP) ;
@@ -55,7 +55,7 @@ mDesiredBitRate (inDesiredBitRate) {
   mTripleSampling = (inDesiredBitRate <= 125000) && (mTimeSegment2 > 2) ;
 //--- Final check of the configuration
   const uint32_t W = bestTQCount * mDesiredBitRate * mBitRatePrescaler ;
-  const uint64_t diff = (CAN_CLOCK > W) ? (CAN_CLOCK - W) : (W - CAN_CLOCK) ;
+  const uint64_t diff = (CANClock > W) ? (CANClock - W) : (W - CANClock) ;
   const uint64_t ppm = uint64_t (1000UL * 1000UL) ;
   mBitRateClosedToDesiredRate = (diff * ppm) <= (uint64_t (W) * inTolerancePPM) ;
 }
@@ -64,14 +64,14 @@ mDesiredBitRate (inDesiredBitRate) {
 
 uint32_t ACAN_ESP32_Settings::actualBitRate (void) const {
   const uint32_t TQCount = SYNC_SEGMENT + mTimeSegment1 + mTimeSegment2 ;
-  return CAN_CLOCK / mBitRatePrescaler / TQCount ;
+  return CAN_CLOCK () / mBitRatePrescaler / TQCount ;
 }
 
 //----------------------------------------------------------------------------------------
 
 bool ACAN_ESP32_Settings::exactBitRate (void) const {
   const uint32_t TQCount = SYNC_SEGMENT + mTimeSegment1 + mTimeSegment2 ;
-  return CAN_CLOCK == (mDesiredBitRate * mBitRatePrescaler * TQCount) ;
+  return CAN_CLOCK () == (mDesiredBitRate * mBitRatePrescaler * TQCount) ;
 }
 
 //----------------------------------------------------------------------------------------
@@ -79,7 +79,8 @@ bool ACAN_ESP32_Settings::exactBitRate (void) const {
 uint32_t ACAN_ESP32_Settings::ppmFromDesiredBitRate(void) const {
   const uint32_t TQCount = SYNC_SEGMENT + mTimeSegment1 + mTimeSegment2 ;
   const uint32_t W = TQCount * mDesiredBitRate * mBitRatePrescaler ;
-  const uint64_t diff = (CAN_CLOCK > W) ? (CAN_CLOCK - W) : (W - CAN_CLOCK) ;
+  const uint32_t CANClock = CAN_CLOCK () ;
+  const uint64_t diff = (CANClock > W) ? (CANClock - W) : (W - CANClock) ;
   const uint64_t ppm = (uint64_t)(1000UL * 1000UL) ; // UL suffix is required for Arduino Uno
   return uint32_t ((diff * ppm) / W) ;
 }

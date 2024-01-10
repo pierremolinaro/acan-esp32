@@ -22,6 +22,8 @@
 //----------------------------------------------------------------------------------------
 
 #include <ACAN_ESP32.h>
+#include <esp_chip_info.h>
+#include <esp_flash.h>
 #include <core_version.h> // For ARDUINO_ESP32_RELEASE
 
 //----------------------------------------------------------------------------------------
@@ -46,7 +48,9 @@ void setup() {
   Serial.print ("ESP32 SDK: ") ;
   Serial.println (ESP.getSdkVersion ()) ;
   Serial.print ("ESP32 Flash: ") ;
-  Serial.print (spi_flash_get_chip_size () / (1024 * 1024)) ;
+  uint32_t size_flash_chip ;
+  esp_flash_get_size (NULL, &size_flash_chip) ;
+  Serial.print (size_flash_chip / (1024 * 1024)) ;
   Serial.print (" MB ") ;
   Serial.println (((chip_info.features & CHIP_FEATURE_EMB_FLASH) != 0) ? "(embeded)" : "(external)") ;
   Serial.print ("APB CLOCK: ") ;
