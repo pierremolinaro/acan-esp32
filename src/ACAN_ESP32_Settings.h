@@ -11,7 +11,6 @@
 //--- For getting getApbFrequency function declaration
 #ifdef ARDUINO
   #include <Arduino.h>
-//  #include <esp32-hal-cpu.h>
 #endif
 
 //----------------------------------------------------------------------------------------

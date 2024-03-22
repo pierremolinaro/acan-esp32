@@ -7,7 +7,7 @@
 
 #include <ACAN_ESP32_CANRegisters.h>
 #include <ACAN_ESP32_Settings.h>
-#include <CANMessage.h>
+#include <ACAN_ESP32_CANMessage.h>
 #include <ACAN_ESP32_Buffer16.h>
 #include <ACAN_ESP32_AcceptanceFilters.h>
 

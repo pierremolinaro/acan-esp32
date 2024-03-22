@@ -26,7 +26,7 @@ static const uint32_t DESIRED_BIT_RATE = 1000UL * 1000UL ; // 1 Mb/s
 //----------------------------------------------------------------------------------------
 
 void setup () {
- //--- Switch on builtin led
+//--- Switch on builtin led
   pinMode (LED_BUILTIN, OUTPUT) ;
   digitalWrite (LED_BUILTIN, HIGH) ;
 //--- Start serial
