@@ -213,6 +213,25 @@ uint32_t ACAN_ESP32::begin (const ACAN_ESP32_Settings & inSettings,
 }
 
 //----------------------------------------------------------------------------------------
+//   Stop CAN controller and uninstall ISR
+//----------------------------------------------------------------------------------------
+
+void ACAN_ESP32::end (void) {
+//--------------------------------- Abort any pending transfer, don't care about resetting
+  TWAI_CMD_REG = TWAI_ABORT_TX ;
+
+//--------------------------------- Disable Interupts
+  TWAI_INT_ENA_REG = 0 ;
+  if (mInterruptHandler != nullptr) {
+    esp_intr_free (mInterruptHandler) ;
+    mInterruptHandler = nullptr ;
+  }
+
+//--------------------------------- Disable CAN module
+  periph_module_disable (PERIPH_TWAI_MODULE) ;
+}
+
+//----------------------------------------------------------------------------------------
 //--- Status Flags (returns 0 if no error)
 //  Bit 0 : hardware receive FIFO overflow
 //  Bit 1 : driver receive FIFO overflow
