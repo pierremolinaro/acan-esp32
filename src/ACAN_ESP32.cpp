@@ -1,48 +1,76 @@
-//----------------------------------------------------------------------------------------
+//------------------------------------------------------------------------------
 //   Include files
-//----------------------------------------------------------------------------------------
+//------------------------------------------------------------------------------
 
 #include <ACAN_ESP32.h>
 
-#include <esp_private/periph_ctrl.h> // For ESP32 board manager
-//#include <driver/periph_ctrl.h> // For M5Stack board manager
+//------------------------------------------------------------------------------
 
-//----------------------------------------------------------------------------------------
+#include <esp_private/periph_ctrl.h> // For ESP32 board manager
+#include <hal/clk_gate_ll.h> // For ESP32 board manager
+
+//------------------------------------------------------------------------------
 //   ESP32 Critical Section
-//----------------------------------------------------------------------------------------
+//------------------------------------------------------------------------------
 
 // taskENTER_CRITICAL() of FREE-RTOS is deprecated as portENTER_CRITICAL() in ESP32
 //--- https://esp32.com/viewtopic.php?t=1703
-static portMUX_TYPE mux = portMUX_INITIALIZER_UNLOCKED ;
+static portMUX_TYPE portMux = portMUX_INITIALIZER_UNLOCKED ;
 
-//----------------------------------------------------------------------------------------
-//   CONSTRUCTOR
-//----------------------------------------------------------------------------------------
+//------------------------------------------------------------------------------
+//   CONSTRUCTOR for ESP32C6 (2 TWAI controllers)
+//------------------------------------------------------------------------------
 
-ACAN_ESP32::ACAN_ESP32 (void) :
-mAcceptedFrameFormat (ACAN_ESP32_Filter::standardAndExtended),
-mDriverReceiveBuffer (),
-mDriverTransmitBuffer (),
-mDriverIsSending (false) {
+#ifdef CONFIG_IDF_TARGET_ESP32C6
+  ACAN_ESP32::ACAN_ESP32 (const uint32_t inBaseAddress,
+                          const uint32_t inTxPinIndexSelector,
+                          const uint32_t inRxPinIndexSelector,
+                          const periph_module_t inPeriphModule,
+                          const periph_interrput_t inInterruptSource,
+                          const uint32_t inClockEnableAddress) :
+  twaiBaseAddress (inBaseAddress),
+  twaiTxPinSelector (inTxPinIndexSelector),
+  twaiRxPinSelector (inRxPinIndexSelector),
+  twaiPeriphModule (inPeriphModule),
+  twaiInterruptSource (inInterruptSource),
+  twaiClockEnableAddress (inClockEnableAddress),
+  mAcceptedFrameFormat (ACAN_ESP32_Filter::standardAndExtended),
+  mDriverReceiveBuffer (),
+  mDriverTransmitBuffer (),
+  mDriverIsSending (false) {
 }
+#endif
 
-//----------------------------------------------------------------------------------------
+//------------------------------------------------------------------------------
+//   CONSTRUCTOR for others (1 TWAI controller)
+//------------------------------------------------------------------------------
+
+#ifndef CONFIG_IDF_TARGET_ESP32C6
+  ACAN_ESP32::ACAN_ESP32 (void) :
+  mAcceptedFrameFormat (ACAN_ESP32_Filter::standardAndExtended),
+  mDriverReceiveBuffer (),
+  mDriverTransmitBuffer (),
+  mDriverIsSending (false) {
+}
+#endif
+
+//------------------------------------------------------------------------------
 //   Set the GPIO pins
-//----------------------------------------------------------------------------------------
+//------------------------------------------------------------------------------
 
 void ACAN_ESP32::setGPIOPins (const gpio_num_t inTXPin,
                               const gpio_num_t inRXPin) {
 //--- Set TX pin
   pinMode (inTXPin, OUTPUT) ;
-  pinMatrixOutAttach (inTXPin, TWAI_TX_IDX, false, false) ;
+  pinMatrixOutAttach (inTXPin, twaiTxPinSelector, false, false) ;
 //--- Set RX pin
   pinMode (inRXPin, INPUT) ;
-  pinMatrixInAttach (inRXPin, TWAI_RX_IDX, false) ;
+  pinMatrixInAttach (inRXPin, twaiRxPinSelector, false) ;
 }
 
-//----------------------------------------------------------------------------------------
+//------------------------------------------------------------------------------
 //   Set the Requested Mode
-//----------------------------------------------------------------------------------------
+//------------------------------------------------------------------------------
 
 void ACAN_ESP32::setRequestedCANMode (const ACAN_ESP32_Settings & inSettings,
                                       const ACAN_ESP32_Filter & inFilter) {
@@ -70,16 +98,17 @@ void ACAN_ESP32::setRequestedCANMode (const ACAN_ESP32_Settings & inSettings,
     requestedMode |= TWAI_RX_FILTER_MODE ;
   }
 
-  TWAI_MODE_REG = requestedMode | TWAI_RESET_MODE ;
+  TWAI_MODE_REG () = requestedMode | TWAI_RESET_MODE ;
+  uint32_t unusedResult __attribute__((unused)) = TWAI_MODE_REG () ;
 
   do{
-    TWAI_MODE_REG = requestedMode ;
-  }while ((TWAI_MODE_REG & TWAI_RESET_MODE) != 0) ;
+    TWAI_MODE_REG () = requestedMode ;
+  }while ((TWAI_MODE_REG () & TWAI_RESET_MODE) != 0) ;
 }
 
-//----------------------------------------------------------------------------------------
+//------------------------------------------------------------------------------
 //   Set the Bus timing Registers
-//----------------------------------------------------------------------------------------
+//------------------------------------------------------------------------------
 
 inline void ACAN_ESP32::setBitTimingSettings (const ACAN_ESP32_Settings & inSettings) {
 // BUS TIMING Configuration of ESP32 CAN
@@ -89,36 +118,58 @@ inline void ACAN_ESP32::setBitTimingSettings (const ACAN_ESP32_Settings & inSett
 #ifdef CONFIG_IDF_TARGET_ESP32
   //  BTR0 : bit (0 - 5) -> Baud Rate Prescaller (BRP)
   //         bit (6 - 7) -> Resynchronization Jump Width (RJW)
-    TWAI_BUS_TIMING_0_REG =
+    TWAI_BUS_TIMING_0_REG () =
       ((inSettings.mRJW - 1) << 6) |            // SJW
       ((inSettings.mBitRatePrescaler - 1) << 0) // BRP
     ;
-#else
+#elif defined (CONFIG_IDF_TARGET_ESP32S3)
   //  BTR0 : bit (00 - 13) -> Baud Rate Prescaller (BRP)
   //         bit (14 - 15) -> Resynchronization Jump Width (RJW)
-    TWAI_BUS_TIMING_0_REG =
+    TWAI_BUS_TIMING_0_REG () =
       ((inSettings.mRJW - 1) << 14) |           // SJW
       ((inSettings.mBitRatePrescaler - 1) << 0) // BRP
     ;
+#elif defined (CONFIG_IDF_TARGET_ESP32S2)
+  //  BTR0 : bit (00 - 13) -> Baud Rate Prescaller (BRP)
+  //         bit (14 - 15) -> Resynchronization Jump Width (RJW)
+    TWAI_BUS_TIMING_0_REG () =
+      ((inSettings.mRJW - 1) << 14) |           // SJW
+      ((inSettings.mBitRatePrescaler - 1) << 0) // BRP
+    ;
+#elif defined (CONFIG_IDF_TARGET_ESP32C3)
+  //  BTR0 : bit (00 - 13) -> Baud Rate Prescaller (BRP)
+  //         bit (14 - 15) -> Resynchronization Jump Width (RJW)
+    TWAI_BUS_TIMING_0_REG () =
+      ((inSettings.mRJW - 1) << 14) |           // SJW
+      ((inSettings.mBitRatePrescaler - 1) << 0) // BRP
+    ;
+#elif defined (CONFIG_IDF_TARGET_ESP32C6)
+  //  BTR0 : bit (00 - 13) -> Baud Rate Prescaller (BRP)
+  //         bit (14 - 15) -> Resynchronization Jump Width (RJW)
+    TWAI_BUS_TIMING_0_REG () =
+      ((inSettings.mRJW - 1) << 14) |           // SJW
+      ((inSettings.mBitRatePrescaler - 1) << 0) // BRP
+    ;
+#else
+  #error "Unknown board"
 #endif
 
-
-//--- BTR1 : bit (0 - 3) -> TimeSegment 1 (Tseg1)
-//         bit (4 - 6) -> TimeSegment 2 (Tseg2)
-//         bit (7)     -> TripleSampling? (SAM)
-  TWAI_BUS_TIMING_1_REG =
+//--- BTR1: bit (0 - 3) -> TimeSegment 1 (Tseg1)
+//          bit (4 - 6) -> TimeSegment 2 (Tseg2)
+//          bit (7)     -> TripleSampling? (SAM)
+  TWAI_BUS_TIMING_1_REG () =
     ((inSettings.mTripleSampling) << 7)   | // Sampling
     ((inSettings.mTimeSegment2 - 1) << 4) | // Tseg2
     ((inSettings.mTimeSegment1 - 1) << 0)   // Tseg1
   ;
 }
 
-//----------------------------------------------------------------------------------------
+//------------------------------------------------------------------------------
 
 void ACAN_ESP32::setAcceptanceFilter (const ACAN_ESP32_Filter & inFilter) {
 //--- Write the Code and Mask Registers with Acceptance Filter Settings
   if (inFilter.mAMFSingle) {
-    TWAI_MODE_REG = TWAI_MODE_REG | TWAI_RX_FILTER_MODE ;
+    TWAI_MODE_REG () |= TWAI_RX_FILTER_MODE ;
   }
   mAcceptedFrameFormat = inFilter.mFormat ;
 
@@ -133,45 +184,53 @@ void ACAN_ESP32::setAcceptanceFilter (const ACAN_ESP32_Filter & inFilter) {
   TWAI_ACC_MASK_FILTER (3) = inFilter.mAMR3 ;
 }
 
-//----------------------------------------------------------------------------------------
+//------------------------------------------------------------------------------
 //   BEGIN
-//----------------------------------------------------------------------------------------
+//------------------------------------------------------------------------------
 
 uint32_t ACAN_ESP32::begin (const ACAN_ESP32_Settings & inSettings,
                             const ACAN_ESP32_Filter & inFilterSettings) {
-  uint32_t errorCode = 0 ; // Ok be default
+//   Serial.println (twaiBaseAddress, HEX) ;
+  uint32_t errorCode = 0 ; // Ok by default
+//--------------------------------- Enable CAN module clock (only for ESP32C6)
+  #ifdef CONFIG_IDF_TARGET_ESP32C6
+    #define ACAN_CLOCK_ENABLE_REG (*((volatile uint32_t *) twaiClockEnableAddress))
+    ACAN_CLOCK_ENABLE_REG = 1 << 22 ;
+  //--- Display enable settings (for twai0)
+//     #define ACAN_PCR_TWAI0_CONF_REG (*((volatile uint32_t *) (0x60096000 + 0x05C)))
+//     #define ACAN_PCR_TWAI0_FUNC_CLK_CONF_REG (*((volatile uint32_t *) (0x60096000 + 0x060)))
+//     Serial.print ("Reset reg (should be 1): 0x") ;
+//     Serial.println (ACAN_PCR_TWAI0_CONF_REG, HEX) ;
+//     Serial.print ("Clock select reg (should be 0x400000): 0x") ;
+//     Serial.println (ACAN_PCR_TWAI0_FUNC_CLK_CONF_REG, HEX) ;
+  #endif
 //--------------------------------- Enable CAN module
-  //----Access the CAN Peripheral registers and initialize the CLOCK
-  //https://github.com/ThomasBarth/ESP32-CAN-Driver/blob/master/components/can/CAN.c
-  //Function periph_module_enable(); - https://github.com/espressif/esp-idf/blob/master/components/driver/periph_ctrl.c
-//   #if defined (ARDUINO_ESP32_RELEASE_1_0_6) || defined (ARDUINO_ESP32_RELEASE_1_0_5)
-//     const periph_module_t PERIPH_TWAI_MODULE = PERIPH_CAN_MODULE ;
-//   #endif
-  periph_module_enable (PERIPH_TWAI_MODULE) ;
+  periph_module_enable (twaiPeriphModule) ;
 //--------------------------------- Set GPIO pins
   setGPIOPins (inSettings.mTxPin, inSettings.mRxPin);
 //--------------------------------- Required: It is must to enter RESET Mode to write the Configuration Registers
-  TWAI_CMD_REG = TWAI_ABORT_TX ;
-  while ((TWAI_MODE_REG & TWAI_RESET_MODE) == 0) {
-    TWAI_MODE_REG = TWAI_RESET_MODE ;
+  TWAI_CMD_REG () = TWAI_ABORT_TX ;
+  TWAI_MODE_REG () = TWAI_RESET_MODE ;
+  while ((TWAI_MODE_REG () & TWAI_RESET_MODE) == 0) {
+    TWAI_MODE_REG () = TWAI_RESET_MODE ;
   }
-  if ((TWAI_MODE_REG & TWAI_RESET_MODE) == 0) {
+  if ((TWAI_MODE_REG () & TWAI_RESET_MODE) == 0) {
     errorCode = kNotInResetModeInConfiguration ;
   }
 //--------------------------------- Disable Interupts
-  TWAI_INT_ENA_REG = 0 ;
+  TWAI_INT_ENA_REG () = 0 ;
   if (mInterruptHandler != nullptr) {
     esp_intr_free (mInterruptHandler) ;
     mInterruptHandler = nullptr ;
   }
 //--------------------------------- Use Pelican Mode
-  TWAI_CLOCK_DIVIDER_REG = TWAI_EXT_MODE ;
+  TWAI_CLOCK_DIVIDER_REG () = TWAI_EXT_MODE ;
 //---- Check the Register access and bit timing settings before writing to the Bit Timing Registers
-  TWAI_BUS_TIMING_0_REG = 0x55 ;
-  bool ok = TWAI_BUS_TIMING_0_REG == 0x55 ;
+  TWAI_BUS_TIMING_0_REG () = 0x55 ;
+  bool ok = TWAI_BUS_TIMING_0_REG () == 0x55 ;
   if (ok) {
-    TWAI_BUS_TIMING_0_REG = 0xAA ;
-    ok = TWAI_BUS_TIMING_0_REG == 0xAA ;
+    TWAI_BUS_TIMING_0_REG () = 0xAA ;
+    ok = TWAI_BUS_TIMING_0_REG () == 0xAA ;
   }
   if (!ok) {
     errorCode |= kCANRegistersError ;
@@ -195,24 +254,21 @@ uint32_t ACAN_ESP32::begin (const ACAN_ESP32_Settings & inSettings,
 //--------------------------------- Set the Acceptance Filter
   setAcceptanceFilter (inFilterSettings) ;
 //--------------------------------- Set and clear the error counters to default value
-  TWAI_ERR_WARNING_LIMIT_REG = 96 ;
-  TWAI_RX_ERR_CNT_REG = 0 ;
+  TWAI_ERR_WARNING_LIMIT_REG () = 96 ;
+  TWAI_RX_ERR_CNT_REG () = 0 ;
 //--------------------------------- Clear the Interrupt Registers
-  const uint8_t unusedVariable __attribute__((unused)) = TWAI_INT_RAW_REG ;
+  const uint32_t unusedVariable __attribute__((unused)) = TWAI_INT_RAW_REG () ;
 //--------------------------------- Set Interrupt Service Routine
-//   #if defined (ARDUINO_ESP32_RELEASE_1_0_6) || defined (ARDUINO_ESP32_RELEASE_1_0_5)
-//     const int ETS_TWAI_INTR_SOURCE = ETS_CAN_INTR_SOURCE ;
-//   #endif
-  esp_intr_alloc (ETS_TWAI_INTR_SOURCE, 0, isr, this, & mInterruptHandler) ;
+  esp_intr_alloc (twaiInterruptSource, 0, isr, this, & mInterruptHandler) ;
 //--------------------------------- Enable Interupts
-  TWAI_INT_ENA_REG = TWAI_TX_INT_ENA | TWAI_RX_INT_ENA ;
+  TWAI_INT_ENA_REG () = TWAI_TX_INT_ENA | TWAI_RX_INT_ENA ;
 //--------------------------------- Set to Requested Mode
   setRequestedCANMode (inSettings, inFilterSettings) ;
 //---
   return errorCode ;
 }
 
-//----------------------------------------------------------------------------------------
+//------------------------------------------------------------------------------
 //--- Status Flags (returns 0 if no error)
 //  Bit 0 : hardware receive FIFO overflow
 //  Bit 1 : driver receive FIFO overflow
@@ -221,7 +277,7 @@ uint32_t ACAN_ESP32::begin (const ACAN_ESP32_Settings & inSettings,
 
 uint32_t ACAN_ESP32::statusFlags (void) const {
   uint32_t result = 0 ; // Ok
-  const uint32_t status = TWAI_STATUS_REG ;
+  const uint32_t status = TWAI_STATUS_REG () ;
 //--- Hardware receive FIFO overflow ?
   if ((status & TWAI_OVERRUN_ST) != 0) {
     result |= 1U << 0 ;
@@ -235,58 +291,58 @@ uint32_t ACAN_ESP32::statusFlags (void) const {
     result |= 1U << 2 ;
   }
 //--- Reset mode ?
-  if ((TWAI_MODE_REG & TWAI_RESET_MODE) != 0) {
+  if ((TWAI_MODE_REG () & TWAI_RESET_MODE) != 0) {
     result |= 1U << 3 ;
   }
 //---
   return result ;
 }
 
-//----------------------------------------------------------------------------------------
+//------------------------------------------------------------------------------
 
 bool ACAN_ESP32::recoverFromBusOff (void) const {
-  const bool isBusOff = (TWAI_STATUS_REG & TWAI_BUS_OFF_ST) != 0 ;
-  const bool inResetMode = (TWAI_MODE_REG & TWAI_RESET_MODE) != 0 ;
+  const bool isBusOff = (TWAI_STATUS_REG () & TWAI_BUS_OFF_ST) != 0 ;
+  const bool inResetMode = (TWAI_MODE_REG () & TWAI_RESET_MODE) != 0 ;
   const bool recover = isBusOff && inResetMode ;
   if (recover) {
-    TWAI_MODE_REG = TWAI_MODE_REG & ~ TWAI_RESET_MODE ;
+    TWAI_MODE_REG () &= ~ TWAI_RESET_MODE ;
   }
   return recover ;
 }
 
-//----------------------------------------------------------------------------------------
+//------------------------------------------------------------------------------
 //   Interrupt Handler
-//----------------------------------------------------------------------------------------
+//------------------------------------------------------------------------------
 
 void IRAM_ATTR ACAN_ESP32::isr (void * inUserArgument) {
   ACAN_ESP32 * myDriver = (ACAN_ESP32 *) inUserArgument ;
 
-  portENTER_CRITICAL (&mux) ;
-  const uint32_t interrupt = TWAI_INT_RAW_REG ;
+  portENTER_CRITICAL (&portMux) ;
+  const uint32_t interrupt = myDriver->TWAI_INT_RAW_REG () ;
   if ((interrupt & TWAI_RX_INT_ST) != 0) {
      myDriver->handleRXInterrupt () ;
   }
   if ((interrupt & TWAI_TX_INT_ST) != 0) {
      myDriver->handleTXInterrupt () ;
   }
-  portEXIT_CRITICAL (&mux) ;
+  portEXIT_CRITICAL (&portMux) ;
 
   portYIELD_FROM_ISR () ;
 }
 
-//-------------------------------------------------------------------------------------
+//------------------------------------------------------------------------------
 
 void ACAN_ESP32::handleTXInterrupt (void) {
   CANMessage message ;
   const bool sendmsg = mDriverTransmitBuffer.remove (message) ;
   if (sendmsg) {
-    internalSendMessage (message);
+    internalSendMessage (message) ;
   }else {
     mDriverIsSending = false ;
   }
 }
 
-//-------------------------------------------------------------------------------------
+//------------------------------------------------------------------------------
 
 void ACAN_ESP32::handleRXInterrupt (void) {
   CANMessage frame;
@@ -308,68 +364,65 @@ void ACAN_ESP32::handleRXInterrupt (void) {
   }
 }
 
-//----------------------------------------------------------------------------------------
+//------------------------------------------------------------------------------
 //   RECEPTION
-//----------------------------------------------------------------------------------------
+//------------------------------------------------------------------------------
 
 bool ACAN_ESP32::available (void) const {
   const bool hasReceivedMessage = mDriverReceiveBuffer.count () > 0 ;
   return hasReceivedMessage ;
 }
 
-//----------------------------------------------------------------------------------------
+//------------------------------------------------------------------------------
 
 bool ACAN_ESP32::receive (CANMessage & outMessage) {
-  portENTER_CRITICAL (&mux) ;
+  portENTER_CRITICAL (&portMux) ;
     const bool hasReceivedMessage = mDriverReceiveBuffer.remove (outMessage) ;
-  portEXIT_CRITICAL (&mux) ;
+  portEXIT_CRITICAL (&portMux) ;
   return hasReceivedMessage ;
 }
 
-//----------------------------------------------------------------------------------------
+//------------------------------------------------------------------------------
 
 void ACAN_ESP32::getReceivedMessage (CANMessage & outFrame) {
-  const uint32_t frameInfo = TWAI_FRAME_INFO ;
+  const uint32_t frameInfo = TWAI_FRAME_INFO () ;
 
   outFrame.len = frameInfo & 0xF;
   if (outFrame.len > 8) {
     outFrame.len = 8 ;
   }
-  outFrame.rtr = (frameInfo & TWAI_RTR) != 0;
+  outFrame.rtr = (frameInfo & TWAI_RTR) != 0 ;
   outFrame.ext = (frameInfo & TWAI_FRAME_FORMAT_EFF) != 0 ;
 
-  //-----------Standard Frame
-  if (!outFrame.ext) {
-    uint32_t identifier =  uint32_t (TWAI_ID_SFF(0)) << 3 ;
-             identifier |= uint32_t (TWAI_ID_SFF(1)) >> 5 ;
-    outFrame.id = identifier;
+  if (!outFrame.ext) { //--- Standard Frame
+    outFrame.id =  (TWAI_ID_SFF (0) << 3) & 255 ;
+    outFrame.id |= (TWAI_ID_SFF (1) >> 5) & 255 ;
 
     for (uint8_t i=0 ; i<outFrame.len ; i++) {
-      outFrame.data[i] = TWAI_DATA_SFF(i);
+      outFrame.data[i] = uint8_t (TWAI_DATA_SFF (i)) ;
     }
-  }else{ //-----------Extended Frame
-    uint32_t identifier =  uint32_t (TWAI_ID_EFF(0)) << 21 ;
-             identifier |= uint32_t (TWAI_ID_EFF(1)) << 13 ;
-             identifier |= uint32_t (TWAI_ID_EFF(2)) << 5  ;
-             identifier |= uint32_t (TWAI_ID_EFF(3)) >> 3  ;
-    outFrame.id = identifier;
+  }else{ //--- Extended Frame
+    outFrame.id =  (TWAI_ID_EFF (0) << 21) & 255 ;
+    outFrame.id |= (TWAI_ID_EFF (1) << 13) & 255 ;
+    outFrame.id |= (TWAI_ID_EFF (2) <<  5) & 255 ;
+    outFrame.id |= (TWAI_ID_EFF (3) >>  3) & 255 ;
 
     for (uint8_t i=0 ; i<outFrame.len ; i++) {
-      outFrame.data[i] = TWAI_DATA_EFF(i);
+      outFrame.data [i] = uint8_t (TWAI_DATA_EFF (i)) ;
     }
   }
 
-  TWAI_CMD_REG = TWAI_RELEASE_BUF ;
+  TWAI_CMD_REG () = TWAI_RELEASE_BUF ;
 }
 
-//----------------------------------------------------------------------------------------
+//------------------------------------------------------------------------------
 //   TRANSMISSION
-//----------------------------------------------------------------------------------------
+//------------------------------------------------------------------------------
 
 bool ACAN_ESP32::tryToSend (const CANMessage & inMessage) {
   bool sendMessage ;
 //--- Bug fixed in 1.0.2 (thanks to DirkMeintjies)
-  portENTER_CRITICAL (&mux) ;
+  portENTER_CRITICAL (&portMux) ;
     if (mDriverIsSending) {
       sendMessage = mDriverTransmitBuffer.append (inMessage);
     }else{
@@ -377,49 +430,73 @@ bool ACAN_ESP32::tryToSend (const CANMessage & inMessage) {
       mDriverIsSending = true ;
       sendMessage = true ;
     }
-  portEXIT_CRITICAL (&mux) ;
+  portEXIT_CRITICAL (&portMux) ;
   return sendMessage ;
 }
 
-//----------------------------------------------------------------------------------------
+//------------------------------------------------------------------------------
 
-void ACAN_ESP32::internalSendMessage (const CANMessage &inFrame) {
+void ACAN_ESP32::internalSendMessage (const CANMessage & inFrame) {
 //--- DLC
-  const uint8_t dlc = (inFrame.len <= 8) ? inFrame.len : 8;
+  const uint8_t dlc = (inFrame.len <= 8) ? inFrame.len : 8 ;
 //--- RTR
   const uint8_t rtr = inFrame.rtr ? TWAI_RTR : 0 ;
-//--- Frame ID
-  const uint8_t id = (inFrame.ext) ? TWAI_FRAME_FORMAT_EFF : TWAI_FRAME_FORMAT_SFF ;
+//--- Format
+  const uint8_t format = (inFrame.ext) ? TWAI_FRAME_FORMAT_EFF : TWAI_FRAME_FORMAT_SFF ;
 //--- Set Frame Information
-  TWAI_FRAME_INFO = id | rtr | TWAI_DLC (dlc) ;
+  TWAI_FRAME_INFO () = format | rtr | dlc ;
 //--- Identifier and data
-  if (!inFrame.ext) { //-------Standard Frame
+  if (!inFrame.ext) { //--- Standard Frame
   //--- Set ID
-    TWAI_ID_SFF(0) = uint8_t (inFrame.id >> 3) ;
-    TWAI_ID_SFF(1) = uint8_t (inFrame.id << 5) ;
+    TWAI_ID_SFF(0) = (inFrame.id >> 3) & 255 ;
+    TWAI_ID_SFF(1) = (inFrame.id << 5) & 255 ;
   //--- Set data
     for (uint8_t i=0 ; i<dlc ; i++) {
-      TWAI_DATA_SFF (i) = inFrame.data [i];
+      TWAI_DATA_SFF (i) = inFrame.data [i] ;
     }
-  }else{ //-------Extended Frame
+  }else{ //--- Extended Frame
   //--- Set ID
-   TWAI_ID_EFF(0) = uint8_t (inFrame.id >> 21);
-   TWAI_ID_EFF(1) = uint8_t (inFrame.id >> 13);
-   TWAI_ID_EFF(2) = uint8_t (inFrame.id >> 5);
-   TWAI_ID_EFF(3) = uint8_t (inFrame.id << 3);
+    TWAI_ID_EFF(0) = (inFrame.id >> 21) & 255 ;
+    TWAI_ID_EFF(1) = (inFrame.id >> 13) & 255 ;
+    TWAI_ID_EFF(2) = (inFrame.id >> 5) & 255 ;
+    TWAI_ID_EFF(3) = (inFrame.id << 3) & 255 ;
   //--- Set data
     for (uint8_t i=0 ; i<dlc ; i++) {
-      TWAI_DATA_EFF (i) = inFrame.data [i];
+      TWAI_DATA_EFF (i) = inFrame.data [i] ;
     }
   }
 //--- Send command
-  TWAI_CMD_REG = ((TWAI_MODE_REG & TWAI_SELF_TEST_MODE) != 0) ? TWAI_SELF_RX_REQ : TWAI_TX_REQ ;
+  TWAI_CMD_REG () = ((TWAI_MODE_REG () & TWAI_SELF_TEST_MODE) != 0)
+    ? TWAI_SELF_RX_REQ
+    : TWAI_TX_REQ
+  ;
 }
 
-//----------------------------------------------------------------------------------------
-//    Driver instance
-//----------------------------------------------------------------------------------------
+//------------------------------------------------------------------------------
+//    Driver instances for ESP32C6
+//------------------------------------------------------------------------------
 
-ACAN_ESP32 ACAN_ESP32::can ;
+#ifdef CONFIG_IDF_TARGET_ESP32C6
+  ACAN_ESP32 ACAN_ESP32::can  (DR_REG_TWAI0_BASE,
+                               TWAI0_TX_IDX,
+                               TWAI0_RX_IDX,
+                               PERIPH_TWAI0_MODULE,
+                               ETS_TWAI0_INTR_SOURCE,
+                               PCR_TWAI0_FUNC_CLK_CONF_REG) ;
+  ACAN_ESP32 ACAN_ESP32::can1 (DR_REG_TWAI1_BASE,
+                               TWAI1_TX_IDX,
+                               TWAI1_RX_IDX,
+                               PERIPH_TWAI1_MODULE,
+                               ETS_TWAI1_INTR_SOURCE,
+                               PCR_TWAI1_FUNC_CLK_CONF_REG) ;
+#endif
 
-//----------------------------------------------------------------------------------------
+//------------------------------------------------------------------------------
+//    Driver instance for others
+//------------------------------------------------------------------------------
+
+#ifndef CONFIG_IDF_TARGET_ESP32C6
+  ACAN_ESP32 ACAN_ESP32::can ;
+#endif
+
+//------------------------------------------------------------------------------

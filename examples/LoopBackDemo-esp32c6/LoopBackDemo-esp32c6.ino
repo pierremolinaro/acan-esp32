@@ -1,9 +1,11 @@
 //----------------------------------------------------------------------------------------
-//  Board Check
+//  Board Check: ESP32C6
 //----------------------------------------------------------------------------------------
 
 #ifndef ARDUINO_ARCH_ESP32
   #error "Select an ESP32 board"
+#elif !defined (CONFIG_IDF_TARGET_ESP32C6)
+  #error "Select an ESP3232C6 board"
 #endif
 
 //----------------------------------------------------------------------------------------
@@ -11,9 +13,14 @@
 //----------------------------------------------------------------------------------------
 
 #include <ACAN_ESP32.h>
+#include <esp_chip_info.h>
+#include <esp_flash.h>
+#include <core_version.h> // For ARDUINO_ESP32_RELEASE
+
+ACAN_ESP32 & myTWAI = ACAN_ESP32::twai (twai1) ;
 
 //----------------------------------------------------------------------------------------
-//  ESP32 Desired Bit Rate
+//  CAN Desired Bit Rate
 //----------------------------------------------------------------------------------------
 
 static const uint32_t DESIRED_BIT_RATE = 1000UL * 1000UL ; // 1 Mb/s
@@ -22,20 +29,41 @@ static const uint32_t DESIRED_BIT_RATE = 1000UL * 1000UL ; // 1 Mb/s
 //   SETUP
 //----------------------------------------------------------------------------------------
 
-void setup() {
- //--- Switch on builtin led
+void setup () {
+//--- Switch on builtin led
   pinMode (LED_BUILTIN, OUTPUT) ;
   digitalWrite (LED_BUILTIN, HIGH) ;
 //--- Start serial
   Serial.begin (115200) ;
   delay (100) ;
+  while (!Serial) {
+    digitalWrite (LED_BUILTIN, !digitalRead (LED_BUILTIN)) ;
+  }
+//--- Display ESP32 Chip Info
+  esp_chip_info_t chip_info ;
+  esp_chip_info (&chip_info) ;
+  Serial.print ("ESP32 Arduino Release: ") ;
+  Serial.println (ARDUINO_ESP32_RELEASE) ;
+  Serial.print ("ESP32 Chip Revision: ") ;
+  Serial.println (chip_info.revision) ;
+  Serial.print ("ESP32 SDK: ") ;
+  Serial.println (ESP.getSdkVersion ()) ;
+  Serial.print ("ESP32 Flash: ") ;
+  uint32_t size_flash_chip ;
+  esp_flash_get_size (NULL, &size_flash_chip) ;
+  Serial.print (size_flash_chip / (1024 * 1024)) ;
+  Serial.print (" MB ") ;
+  Serial.println (((chip_info.features & CHIP_FEATURE_EMB_FLASH) != 0) ? "(embeded)" : "(external)") ;
+  Serial.print ("APB CLOCK: ") ;
+  Serial.print (APB_CLK_FREQ) ;
+  Serial.println (" Hz") ;
 //--- Configure ESP32 CAN
   Serial.println ("Configure ESP32 CAN") ;
   ACAN_ESP32_Settings settings (DESIRED_BIT_RATE) ;
-  settings.mRequestedCANMode = ACAN_ESP32_Settings::LoopBackMode ;  // Select loopback mode
-//  settings.mRxPin = GPIO_NUM_4 ; // Optional, default Tx pin is GPIO_NUM_4
-//  settings.mTxPin = GPIO_NUM_5 ; // Optional, default Rx pin is GPIO_NUM_5
-  const uint32_t errorCode = ACAN_ESP32::can.begin (settings) ;
+  settings.mRequestedCANMode = ACAN_ESP32_Settings::LoopBackMode ;
+  settings.mRxPin = GPIO_NUM_17 ; // Optional, default Rx pin is GPIO_NUM_4
+  settings.mTxPin = GPIO_NUM_19 ; // Optional, default Tx pin is GPIO_NUM_5
+  const uint32_t errorCode = myTWAI.begin (settings) ;
   if (errorCode == 0) {
     Serial.print ("Bit Rate prescaler: ") ;
     Serial.println (settings.mBitRatePrescaler) ;
@@ -52,6 +80,9 @@ void setup() {
     Serial.println (" bit/s") ;
     Serial.print ("Exact bit rate ?    ") ;
     Serial.println (settings.exactBitRate () ? "yes" : "no") ;
+    Serial.print ("Distance            ") ;
+    Serial.print (settings.ppmFromDesiredBitRate ()) ;
+    Serial.println (" ppm") ;
     Serial.print ("Sample point:       ") ;
     Serial.print (settings.samplePointFromBitStart ()) ;
     Serial.println ("%") ;
@@ -64,51 +95,38 @@ void setup() {
 
 //----------------------------------------------------------------------------------------
 
-static uint32_t gBlinkLedDate = 0;
+static uint32_t gBlinkLedDate = 0 ;
 static uint32_t gReceivedFrameCount = 0 ;
 static uint32_t gSentFrameCount = 0 ;
-
-static const uint32_t MESSAGE_COUNT = 10 * 1000 * 1000 ;
 
 //----------------------------------------------------------------------------------------
 //   LOOP
 //----------------------------------------------------------------------------------------
 
-void loop() {
+void loop () {
+  CANMessage frame ;
   if (gBlinkLedDate < millis ()) {
-    gBlinkLedDate += 1000 ;
+    gBlinkLedDate += 500 ;
     digitalWrite (LED_BUILTIN, !digitalRead (LED_BUILTIN)) ;
-    Serial.print ("At ") ;
-    Serial.print (gBlinkLedDate / 1000) ;
-    Serial.print (" s, sent: ") ;
+    Serial.print ("Sent: ") ;
     Serial.print (gSentFrameCount) ;
     Serial.print (" ") ;
-    Serial.print ("Received: ") ;
+    Serial.print ("Receive: ") ;
     Serial.print (gReceivedFrameCount) ;
     Serial.print (" ") ;
     Serial.print (" STATUS 0x") ;
-  //--- Note: TWAI register access from 3.0.0 should name the can channel
-  //   < 3.0.0 :  TWAI_STATUS_REG
-  //  >= 3.0.0 :  ACAN_ESP32::can.TWAI_STATUS_REG ()
-    Serial.print (ACAN_ESP32::can.TWAI_STATUS_REG (), HEX) ;
+    Serial.print (myTWAI.TWAI_STATUS_REG (), HEX) ;
     Serial.print (" RXERR ") ;
-    Serial.print (ACAN_ESP32::can.TWAI_RX_ERR_CNT_REG ()) ;
+    Serial.print (myTWAI.TWAI_RX_ERR_CNT_REG ()) ;
     Serial.print (" TXERR ") ;
-    Serial.println (ACAN_ESP32::can.TWAI_TX_ERR_CNT_REG ()) ;
-  }
-
-  CANMessage frame ;
-  while (ACAN_ESP32::can.receive (frame)) {
-    gReceivedFrameCount += 1 ;
-  }
-
-  if (gSentFrameCount < MESSAGE_COUNT) {
-    frame.len = 1;
-
-    const bool ok = ACAN_ESP32::can.tryToSend (frame) ;
+    Serial.println (myTWAI.TWAI_TX_ERR_CNT_REG ()) ;
+    const bool ok = myTWAI.tryToSend (frame) ;
     if (ok) {
       gSentFrameCount += 1 ;
     }
+  }
+  while (myTWAI.receive (frame)) {
+    gReceivedFrameCount += 1 ;
   }
 }
 

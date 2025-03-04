@@ -117,11 +117,14 @@ void loop () {
     while (((sentCount < MESSAGE_COUNT) || (receiveCount < MESSAGE_COUNT)) && (gBlinkLedDate > millis ())) {
       if (statusPrintDate <= millis ()) {
         Serial.print ("  STATUS 0x") ;
-        Serial.print (TWAI_STATUS_REG, HEX) ;
+      //--- Note: TWAI register access from 3.0.0 should name the can channel
+      //   < 3.0.0 :  TWAI_STATUS_REG
+      //  >= 3.0.0 :  ACAN_ESP32::can.TWAI_STATUS_REG ()
+        Serial.print (ACAN_ESP32::can.TWAI_STATUS_REG (), HEX) ;
         Serial.print (", RXERR ") ;
-        Serial.print (TWAI_RX_ERR_CNT_REG) ;
+        Serial.print (ACAN_ESP32::can.TWAI_RX_ERR_CNT_REG ()) ;
         Serial.print (", TXERR ") ;
-        Serial.println (TWAI_TX_ERR_CNT_REG) ;
+        Serial.println (ACAN_ESP32::can.TWAI_TX_ERR_CNT_REG ()) ;
         statusPrintDate += 250 ;
       }
       if (sentCount < MESSAGE_COUNT) {
@@ -132,11 +135,14 @@ void loop () {
           Serial.print ("  Sent ") ;
           Serial.print (sentCount) ;
           Serial.print (", STATUS 0x") ;
-          Serial.print (TWAI_STATUS_REG, HEX) ;
+        //--- Note: TWAI register access from 3.0.0 should name the can channel
+        //   < 3.0.0 :  TWAI_STATUS_REG
+        //  >= 3.0.0 :  ACAN_ESP32::can.TWAI_STATUS_REG ()
+          Serial.print (ACAN_ESP32::can.TWAI_STATUS_REG (), HEX) ;
           Serial.print (", RXERR ") ;
-          Serial.print (TWAI_RX_ERR_CNT_REG) ;
+          Serial.print (ACAN_ESP32::can.TWAI_RX_ERR_CNT_REG ()) ;
           Serial.print (", TXERR ") ;
-          Serial.println (TWAI_TX_ERR_CNT_REG) ;
+          Serial.println (ACAN_ESP32::can.TWAI_TX_ERR_CNT_REG ()) ;
         }
       }
       CANMessage frame ;

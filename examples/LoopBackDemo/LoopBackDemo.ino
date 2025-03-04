@@ -108,11 +108,14 @@ void loop () {
     Serial.print (gReceivedFrameCount) ;
     Serial.print (" ") ;
     Serial.print (" STATUS 0x") ;
-    Serial.print (TWAI_STATUS_REG, HEX) ;
+  //--- Note: TWAI register access from 3.0.0 should name the can channel
+  //   < 3.0.0 :  TWAI_STATUS_REG
+  //  >= 3.0.0 :  ACAN_ESP32::can.TWAI_STATUS_REG ()
+    Serial.print (ACAN_ESP32::can.TWAI_STATUS_REG (), HEX) ;
     Serial.print (" RXERR ") ;
-    Serial.print (TWAI_RX_ERR_CNT_REG) ;
+    Serial.print (ACAN_ESP32::can.TWAI_RX_ERR_CNT_REG ()) ;
     Serial.print (" TXERR ") ;
-    Serial.println (TWAI_TX_ERR_CNT_REG) ;
+    Serial.println (ACAN_ESP32::can.TWAI_TX_ERR_CNT_REG ()) ;
     const bool ok = ACAN_ESP32::can.tryToSend (frame) ;
     if (ok) {
       gSentFrameCount += 1 ;
