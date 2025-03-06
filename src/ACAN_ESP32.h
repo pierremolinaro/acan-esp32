@@ -1,9 +1,9 @@
 
 #pragma once
 
-//----------------------------------------------------------------------------------------
+//------------------------------------------------------------------------------
 //   Include files
-//----------------------------------------------------------------------------------------
+//------------------------------------------------------------------------------
 
 #include <ACAN_ESP32_TWAI_base_address.h>
 #include <ACAN_ESP32_Settings.h>
@@ -11,21 +11,15 @@
 #include <ACAN_ESP32_Buffer16.h>
 #include <ACAN_ESP32_AcceptanceFilters.h>
 
-//----------------------------------------------------------------------------------------
-
-#ifdef CONFIG_IDF_TARGET_ESP32C6
-  typedef enum { twai0, twai1 } ACAN_TWAI_MODULE ;
-#endif
-
-//----------------------------------------------------------------------------------------
+//------------------------------------------------------------------------------
 //   ESP32 CAN class
-//----------------------------------------------------------------------------------------
+//------------------------------------------------------------------------------
 
 class ACAN_ESP32 {
 
-  // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+  // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   //   CONSTRUCTOR for ESP32C6 (2 TWAI controllers)
-  // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+  // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
   #ifdef CONFIG_IDF_TARGET_ESP32C6
     private: const uint32_t twaiBaseAddress ;
@@ -42,24 +36,24 @@ class ACAN_ESP32 {
                          const uint32_t inClockEnableAddress) ;
   #endif
 
-  // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+  // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   //   CONSTRUCTOR for others (1 TWAI controller)
-  // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+  // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
   #ifndef CONFIG_IDF_TARGET_ESP32C6
     private: ACAN_ESP32 (void) ;
   #endif
 
-  // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+  // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   //    Initialisation: returns 0 if ok, otherwise see error codes below
-  // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+  // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
   public: uint32_t begin (const ACAN_ESP32_Settings & inSettings,
                           const ACAN_ESP32_Filter & inFilterSettings = ACAN_ESP32_Filter::acceptAll ()) ;
 
-  // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+  // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   //    CAN  Configuration Private Methods
-  // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+  // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
   private: void setGPIOPins (const gpio_num_t inTXPin, const gpio_num_t inRXPin);
   private: void setBitTimingSettings(const ACAN_ESP32_Settings &inSettings) ;
@@ -67,17 +61,17 @@ class ACAN_ESP32 {
                                      const ACAN_ESP32_Filter & inFilter) ;
   private: void setAcceptanceFilter (const ACAN_ESP32_Filter & inFilter) ;
 
-  // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+  // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   //    Receiving messages
-  // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+  // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
   public: bool available (void) const ;
   public: bool receive (CANMessage & outMessage) ;
   public: void getReceivedMessage (CANMessage & outFrame) ;
 
-  // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+  // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   //    Receive buffer
-  // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+  // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
   private: ACAN_ESP32_Filter::Format mAcceptedFrameFormat ;
 
@@ -89,16 +83,16 @@ class ACAN_ESP32 {
 
   public: inline void resetDriverReceiveBufferPeakCount (void) { mDriverReceiveBuffer.resetPeakCount () ; }
 
-  // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+  // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   //    Transmitting messages
-  // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+  // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
   public: bool tryToSend (const CANMessage & inMessage) ;
   private: void internalSendMessage (const CANMessage & inFrame) ;
 
-  // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+  // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   //    Transmit buffer
-  // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+  // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
   private: ACAN_ESP32_Buffer16 mDriverTransmitBuffer ;
   private: bool mDriverIsSending ;
@@ -109,9 +103,9 @@ class ACAN_ESP32 {
 
   public: inline void resetDriverTransmitBufferPeakCount (void) { mDriverTransmitBuffer.resetPeakCount () ; }
 
-  // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+  // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   //    Error codes returned by begin
-  // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+  // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
   public: static const uint32_t kNotInResetModeInConfiguration      = 1 << 16 ;
   public: static const uint32_t kCANRegistersError                  = 1 << 17 ;
@@ -120,9 +114,9 @@ class ACAN_ESP32 {
   public: static const uint32_t kCannotAllocateDriverReceiveBuffer  = 1 << 20 ;
   public: static const uint32_t kCannotAllocateDriverTransmitBuffer = 1 << 21 ;
 
-  // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+  // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   //    Interrupt Handler
-  // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+  // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
   public: static void IRAM_ATTR isr (void * inUserArgument) ;
   private: intr_handle_t mInterruptHandler ;
@@ -130,9 +124,9 @@ class ACAN_ESP32 {
   public: void handleTXInterrupt (void) ;
   public: void handleRXInterrupt (void) ;
 
-  // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+  // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   // STATUS FLAGS
-  // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+  // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
   //--- Status Flags (returns 0 if no error)
   //  Bit 0 : hardware receive FIFO overflow
@@ -142,22 +136,22 @@ class ACAN_ESP32 {
 
   public: uint32_t statusFlags (void) const ;
 
-  // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+  // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   // Recover from Bus-Off
-  // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+  // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
   public: bool recoverFromBusOff (void) const ;
 
-  // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+  // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   //    No Copy
-  // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+  // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
   private: ACAN_ESP32 (const ACAN_ESP32 &) = delete ;
   private: ACAN_ESP32 & operator = (const ACAN_ESP32 &) = delete ;
 
-  // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+  // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   //    Driver instances
-  // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+  // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
   public: static ACAN_ESP32 can ;
 
@@ -165,38 +159,27 @@ class ACAN_ESP32 {
     public: static ACAN_ESP32 can1 ;
   #endif
 
-  // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-
-  #ifdef CONFIG_IDF_TARGET_ESP32C6
-    public: static ACAN_ESP32 & twai (const ACAN_TWAI_MODULE inModule) {
-      switch (inModule) {
-      case twai0 : return ACAN_ESP32::can ;
-      default : return ACAN_ESP32::can1 ;
-      }
-    }
-  #endif
-
-  // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+  // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   //    Register Access
-  // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+  // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
   public: inline volatile uint32_t & TWAI_MODE_REG (void) const {
     return * ((volatile uint32_t *) (twaiBaseAddress + 0x000)) ;
   }
 
-  // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+  // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
   public: inline volatile uint32_t & TWAI_CMD_REG (void) const {
     return * ((volatile uint32_t *) (twaiBaseAddress + 0x004)) ;
   }
 
-  // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+  // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
   public: inline volatile uint32_t & TWAI_STATUS_REG (void) const {
     return * ((volatile uint32_t *) (twaiBaseAddress + 0x008)) ;
   }
 
-  // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+  // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
   public: inline volatile uint32_t & TWAI_INT_RAW_REG (void) const {
     return * ((volatile uint32_t *) (twaiBaseAddress + 0x00C)) ;
@@ -206,109 +189,109 @@ class ACAN_ESP32 {
     return * ((volatile uint32_t *) (twaiBaseAddress + 0x010)) ;
   }
 
-  // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+  // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
   public: inline volatile uint32_t & TWAI_BUS_TIMING_0_REG (void) const {
     return * ((volatile uint32_t *) (twaiBaseAddress + 0x018)) ;
   }
 
-  // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+  // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
   public: inline volatile uint32_t & TWAI_BUS_TIMING_1_REG (void) const {
     return * ((volatile uint32_t *) (twaiBaseAddress + 0x01C)) ;
   }
 
-  // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+  // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
   public: inline volatile uint32_t & TWAI_ARB_LOST_CAP_REG (void) const {
     return * ((volatile uint32_t *) (twaiBaseAddress + 0x02C)) ;
   }
 
-  // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+  // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
   public: inline volatile uint32_t & TWAI_ERR_CODE_CAP_REG (void) const {
     return * ((volatile uint32_t *) (twaiBaseAddress + 0x030)) ;
   }
 
-  // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+  // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
   public: inline volatile uint32_t & TWAI_ERR_WARNING_LIMIT_REG (void) const {
     return * ((volatile uint32_t *) (twaiBaseAddress + 0x034)) ;
   }
 
-  // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+  // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
   public: inline volatile uint32_t & TWAI_RX_ERR_CNT_REG (void) const {
     return * ((volatile uint32_t *) (twaiBaseAddress + 0x038)) ;
   }
 
-  // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+  // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
   public: inline volatile uint32_t & TWAI_TX_ERR_CNT_REG (void) const {
     return * ((volatile uint32_t *) (twaiBaseAddress + 0x03C)) ;
   }
 
-  // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+  // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
   public: inline volatile uint32_t & TWAI_FRAME_INFO (void) const {
     return * ((volatile uint32_t *) (twaiBaseAddress + 0x040)) ;
   }
 
-  // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+  // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
   //----- SFF : Standard Frame Format - array size: 2
   public: inline volatile uint32_t & TWAI_ID_SFF (const uint32_t inIndex) const {
     return * ((volatile uint32_t *) (twaiBaseAddress + 0x044 + 4 * inIndex)) ;
   }
 
-  // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+  // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
   //----- EFF : Extended Frame Format - array size: 4
   public: inline volatile uint32_t & TWAI_ID_EFF (const uint32_t inIndex) const {
     return * ((volatile uint32_t *)(twaiBaseAddress + 0x044 + 4 * inIndex)) ;
   }
 
-  // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+  // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
   //----- DATA array size: 8
   public: inline volatile uint32_t & TWAI_DATA_SFF (const uint32_t inIndex) const {
     return * ((volatile uint32_t *) (twaiBaseAddress + 0x04C + 4 * inIndex)) ;
   }
 
-  // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+  // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
   //----- DATA array size: 8
   public: inline volatile uint32_t & TWAI_DATA_EFF (const uint32_t inIndex) const {
     return * ((volatile uint32_t *) (twaiBaseAddress + 0x054 + 4 * inIndex)) ;
   }
 
-  // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+  // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   // CAN Acceptance Filter Registers
   //----- CODE array size: 4
   public: inline volatile uint32_t & TWAI_ACC_CODE_FILTER (const uint32_t inIndex) const {
     return * ((volatile uint32_t *) (twaiBaseAddress + 0x040 + 4 * inIndex)) ;
   }
 
-  // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+  // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
   //----- MASK array size: 4
   public: inline volatile uint32_t & TWAI_ACC_MASK_FILTER (const uint32_t inIndex) const {
     return * ((volatile uint32_t *) (twaiBaseAddress + 0x050 + 4 * inIndex)) ;
   }
 
-  // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+  // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
   public: inline volatile uint32_t & TWAI_RX_MESSAGE_COUNTER_REG (void) const {
     return * ((volatile uint32_t *) (twaiBaseAddress + 0x074)) ;
   }
 
-  // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+  // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
   public: inline volatile uint32_t & TWAI_CLOCK_DIVIDER_REG (void) const {
     return * ((volatile uint32_t *) (twaiBaseAddress + 0x07C)) ;
   }
 
-  // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+  // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
 } ;
 
@@ -384,4 +367,4 @@ static const uint32_t TWAI_MSG_EXT_ID = 0x1FFFFFFF ;
 
 static const uint32_t TWAI_EXT_MODE = 0x80 ;
 
-//----------------------------------------------------------------------------------------
+//------------------------------------------------------------------------------

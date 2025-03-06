@@ -16,7 +16,6 @@ CANMessage	KEYWORD1
 begin KEYWORD2
 receive KEYWORD2
 tryToSend KEYWORD2
-periph_module_enable	KEYWORD2
 
 #######################################
 # Macro definition (KEYWORD3)

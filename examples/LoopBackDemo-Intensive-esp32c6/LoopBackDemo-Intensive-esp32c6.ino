@@ -14,7 +14,16 @@
 
 #include <ACAN_ESP32.h>
 
-ACAN_ESP32 & myTWAI = ACAN_ESP32::twai (twai1) ;
+//----------------------------------------------------------------------------------------
+//  Select TWAI module
+//----------------------------------------------------------------------------------------
+
+// The ESP32C6 has two CAN modules, TWAI0 and TWAI1:
+//  for using TWAI0: CAN_ESP32 & myCAN = ACAN_ESP32::can
+//  for using TWAI1: CAN_ESP32 & myCAN = ACAN_ESP32::can1
+// See PDF documentation, section 7
+
+ACAN_ESP32 & myCAN = ACAN_ESP32::can1 ; // Select TWAI1
 
 //----------------------------------------------------------------------------------------
 //  ESP32 Desired Bit Rate
@@ -41,7 +50,7 @@ void setup() {
   settings.mRequestedCANMode = ACAN_ESP32_Settings::LoopBackMode ;  // Select loopback mode
   settings.mRxPin = GPIO_NUM_17 ; // Optional, default Rx pin is GPIO_NUM_4
   settings.mTxPin = GPIO_NUM_19 ; // Optional, default Tx pin is GPIO_NUM_5
-  const uint32_t errorCode = myTWAI.begin (settings) ;
+  const uint32_t errorCode = myCAN.begin (settings) ;
   if (errorCode == 0) {
     Serial.print ("Bit Rate prescaler: ") ;
     Serial.println (settings.mBitRatePrescaler) ;
@@ -95,16 +104,16 @@ void loop() {
     Serial.print (" STATUS 0x") ;
   //--- Note: TWAI register access from 3.0.0 should name the can channel
   //   < 3.0.0 :  TWAI_STATUS_REG
-  //  >= 3.0.0 :  myTWAI.TWAI_STATUS_REG ()
-    Serial.print (myTWAI.TWAI_STATUS_REG (), HEX) ;
+  //  >= 3.0.0 :  myCAN.TWAI_STATUS_REG ()
+    Serial.print (myCAN.TWAI_STATUS_REG (), HEX) ;
     Serial.print (" RXERR ") ;
-    Serial.print (myTWAI.TWAI_RX_ERR_CNT_REG ()) ;
+    Serial.print (myCAN.TWAI_RX_ERR_CNT_REG ()) ;
     Serial.print (" TXERR ") ;
-    Serial.println (myTWAI.TWAI_TX_ERR_CNT_REG ()) ;
+    Serial.println (myCAN.TWAI_TX_ERR_CNT_REG ()) ;
   }
 
   CANMessage frame ;
-  while (myTWAI.receive (frame)) {
+  while (myCAN.receive (frame)) {
     gReceivedFrameCount += 1 ;
   }
 
@@ -113,7 +122,7 @@ void loop() {
     frame.data32 [0] = gSentFrameCount ;
     frame.data32 [1] = gReceivedFrameCount ;
 
-    const bool ok = myTWAI.tryToSend (frame) ;
+    const bool ok = myCAN.tryToSend (frame) ;
     if (ok) {
       gSentFrameCount += 1 ;
     }
