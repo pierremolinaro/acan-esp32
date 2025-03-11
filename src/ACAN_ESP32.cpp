@@ -395,18 +395,17 @@ void ACAN_ESP32::getReceivedMessage (CANMessage & outFrame) {
   outFrame.ext = (frameInfo & TWAI_FRAME_FORMAT_EFF) != 0 ;
 
   if (!outFrame.ext) { //--- Standard Frame
-    outFrame.id =  (TWAI_ID_SFF (0) << 3) & 255 ;
-    outFrame.id |= (TWAI_ID_SFF (1) >> 5) & 255 ;
+    outFrame.id  = uint32_t (TWAI_ID_SFF(0)) << 3 ;
+    outFrame.id |= uint32_t (TWAI_ID_SFF(1)) >> 5 ;
 
     for (uint8_t i=0 ; i<outFrame.len ; i++) {
       outFrame.data[i] = uint8_t (TWAI_DATA_SFF (i)) ;
     }
   }else{ //--- Extended Frame
-    outFrame.id =  (TWAI_ID_EFF (0) << 21) & 255 ;
-    outFrame.id |= (TWAI_ID_EFF (1) << 13) & 255 ;
-    outFrame.id |= (TWAI_ID_EFF (2) <<  5) & 255 ;
-    outFrame.id |= (TWAI_ID_EFF (3) >>  3) & 255 ;
-
+    outFrame.id  = uint32_t (TWAI_ID_EFF(0)) << 21 ;
+    outFrame.id |= uint32_t (TWAI_ID_EFF(1)) << 13 ;
+    outFrame.id |= uint32_t (TWAI_ID_EFF(2)) <<  5 ;
+    outFrame.id |= uint32_t (TWAI_ID_EFF(3)) >>  3 ;
     for (uint8_t i=0 ; i<outFrame.len ; i++) {
       outFrame.data [i] = uint8_t (TWAI_DATA_EFF (i)) ;
     }
