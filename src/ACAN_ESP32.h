@@ -26,13 +26,13 @@ class ACAN_ESP32 {
     private: const uint32_t twaiTxPinSelector ;
     private: const uint32_t twaiRxPinSelector ;
     private: const periph_module_t twaiPeriphModule ;
-    private: const periph_interrput_t twaiInterruptSource ;
+    private: const periph_interrupt_t twaiInterruptSource ;
     private: const uint32_t twaiClockEnableAddress ;
     private: ACAN_ESP32 (const uint32_t inBaseAddress,
                          const uint32_t inTxPinIndexSelector,
                          const uint32_t inRxPinIndexSelector,
                          const periph_module_t inPeriphModule,
-                         const periph_interrput_t inInterruptSource,
+                         const periph_interrupt_t inInterruptSource,
                          const uint32_t inClockEnableAddress) ;
   #endif
 

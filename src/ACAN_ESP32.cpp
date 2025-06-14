@@ -26,7 +26,7 @@ static portMUX_TYPE portMux = portMUX_INITIALIZER_UNLOCKED ;
                           const uint32_t inTxPinIndexSelector,
                           const uint32_t inRxPinIndexSelector,
                           const periph_module_t inPeriphModule,
-                          const periph_interrput_t inInterruptSource,
+                          const periph_interrupt_t inInterruptSource,
                           const uint32_t inClockEnableAddress) :
   twaiBaseAddress (inBaseAddress),
   twaiTxPinSelector (inTxPinIndexSelector),

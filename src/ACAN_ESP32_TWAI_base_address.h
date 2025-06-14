@@ -29,7 +29,21 @@
 #include <soc/gpio_sig_map.h>
 #include <soc/periph_defs.h>
 #include <soc/interrupts.h>
-// /Users/pierremolinaro/Library/Arduino15/packages/esp32/tools/esp32-arduino-libs/idf-release_v5.4-bcb3c32d-v1/esp32c6/include/soc/esp32c6/include/soc/gpio_sig_map.h:138:9: note: it was later defined here
+
+//------------------------------------------------------------------------------
+// In ESP32 3.3.0-alpha1 board manager, periph_interrput_t has been deprecated
+// in favor of periph_interrupt_t.
+// In ACAN_ESP32 3.0.2, periph_interrput_t is renamed periph_interrupt_t
+// However this change breaks compatibility with previous ESP32 board manager
+// So, for ESP32 3.2.0 and below, periph_interrupt_t is defined as periph_interrput_t
+//------------------------------------------------------------------------------
+
+// esp32/hardware/esp32/3.3.0-alpha1/cores/esp32/esp_arduino_version.h
+#include <esp_arduino_version.h>
+
+#if ESP_ARDUINO_VERSION < ESP_ARDUINO_VERSION_VAL(3, 3, 0)
+  typedef periph_interrput_t periph_interrupt_t ;
+#endif
 
 //------------------------------------------------------------------------------
 
@@ -38,19 +52,19 @@
   static const uint32_t twaiTxPinSelector = TWAI_TX_IDX ;
   static const uint32_t twaiRxPinSelector = TWAI_RX_IDX ;
   static const periph_module_t twaiPeriphModule = PERIPH_TWAI_MODULE ;
-  static const periph_interrput_t twaiInterruptSource = ETS_TWAI_INTR_SOURCE ;
+  static const periph_interrupt_t twaiInterruptSource = ETS_TWAI_INTR_SOURCE ;
 #elif defined (CONFIG_IDF_TARGET_ESP32S2)
   static const uint32_t twaiBaseAddress = 0x3F42B000 ;
   static const uint32_t twaiTxPinSelector = TWAI_TX_IDX ;
   static const uint32_t twaiRxPinSelector = TWAI_RX_IDX ;
   static const periph_module_t twaiPeriphModule = PERIPH_TWAI_MODULE ;
-  static const periph_interrput_t twaiInterruptSource = ETS_TWAI_INTR_SOURCE ;
+  static const periph_interrupt_t twaiInterruptSource = ETS_TWAI_INTR_SOURCE ;
 #elif defined (CONFIG_IDF_TARGET_ESP32C3)
   static const uint32_t twaiBaseAddress = DR_REG_TWAI_BASE ; // 0x6002B000
   static const uint32_t twaiTxPinSelector = TWAI_TX_IDX ;
   static const uint32_t twaiRxPinSelector = TWAI_RX_IDX ;
   static const periph_module_t twaiPeriphModule = PERIPH_TWAI_MODULE ;
-  static const periph_interrput_t twaiInterruptSource = ETS_TWAI_INTR_SOURCE ;
+  static const periph_interrupt_t twaiInterruptSource = ETS_TWAI_INTR_SOURCE ;
 #elif defined (CONFIG_IDF_TARGET_ESP32C6)
   // twaiBaseAddress, twaiTxPinSelector, twaiRxPinSelector, twaiPeriphModule
   // and twaiInterruptSource are defined as instance properties
@@ -60,7 +74,7 @@
   static const uint32_t twaiTxPinSelector = TWAI_TX_IDX ;
   static const uint32_t twaiRxPinSelector = TWAI_RX_IDX ;
   static const periph_module_t twaiPeriphModule = PERIPH_TWAI_MODULE ;
-  static const periph_interrput_t twaiInterruptSource = ETS_TWAI_INTR_SOURCE ;
+  static const periph_interrupt_t twaiInterruptSource = ETS_TWAI_INTR_SOURCE ;
 #else
   #error "ESP32 TWAI (CAN) module not handled for this platform"
 #endif
