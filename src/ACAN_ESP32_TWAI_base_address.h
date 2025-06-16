@@ -31,17 +31,20 @@
 #include <soc/interrupts.h>
 
 //------------------------------------------------------------------------------
+// In ESP32 2.x board managers, ETS_TWAI_INTR_SOURCE is an int constant.
+//
+// In ESP32 3.0.0 board manager, ETS_TWAI_INTR_SOURCE is an periph_interrput_t constant.
+//
 // In ESP32 3.3.0-alpha1 board manager, periph_interrput_t has been deprecated
 // in favor of periph_interrupt_t.
-// In ACAN_ESP32 3.0.2, periph_interrput_t is renamed periph_interrupt_t
-// However this change breaks compatibility with previous ESP32 board manager
-// So, for ESP32 3.2.0 and below, periph_interrupt_t is defined as periph_interrput_t
 //------------------------------------------------------------------------------
 
 // esp32/hardware/esp32/3.3.0-alpha1/cores/esp32/esp_arduino_version.h
 #include <esp_arduino_version.h>
 
-#if ESP_ARDUINO_VERSION < ESP_ARDUINO_VERSION_VAL(3, 3, 0)
+#if ESP_ARDUINO_VERSION < ESP_ARDUINO_VERSION_VAL(3, 0, 0)
+  typedef int periph_interrupt_t ;
+#elif ESP_ARDUINO_VERSION < ESP_ARDUINO_VERSION_VAL(3, 3, 0)
   typedef periph_interrput_t periph_interrupt_t ;
 #endif
 

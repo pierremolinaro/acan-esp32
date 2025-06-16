@@ -6,7 +6,13 @@
 
 //------------------------------------------------------------------------------
 
-#include <esp_private/periph_ctrl.h> // For ESP32 board manager
+//--- Header for periph_module_enable
+#if ESP_ARDUINO_VERSION >= ESP_ARDUINO_VERSION_VAL(3, 0, 0)
+  #include <esp_private/periph_ctrl.h>
+#else
+  #include <driver/periph_ctrl.h>
+#endif
+
 #include <hal/clk_gate_ll.h> // For ESP32 board manager
 
 //------------------------------------------------------------------------------
